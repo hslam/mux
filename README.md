@@ -83,9 +83,15 @@ curl http://localhost:8080/group/123/456
 ```
 group Method:GET foo:123 bar:456
 ```
-curl -H "Accept-Encoding: gzip,deflate" --compressed http://localhost:8080/group/123/456
+curl -I -H "Accept-Encoding: gzip,deflate" --compressed http://localhost:8080/group/123/456
 ```
-group Method:GET foo:123 bar:456
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: *
+Content-Encoding: gzip
+Content-Type: text/plain; charset=utf-8
+Vary: Accept-Encoding
+Date: Mon, 30 Sep 2019 14:49:05 GMT
+Content-Length: 58
 ```
 curl -XPOST http://localhost:8080/group/123/456
 ```
