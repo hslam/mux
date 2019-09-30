@@ -47,3 +47,10 @@ func (g *GzipWriter) Close() (error) {
 	}
 	return nil
 }
+
+func WriteGzip(w http.ResponseWriter, r *http.Request, httpStatus int, b []byte) (err error) {
+	w.WriteHeader(httpStatus)
+	gz:=NewGzipWriter(w,r)
+	gz.Write(b)
+	return gz.Close()
+}

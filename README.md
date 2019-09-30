@@ -53,9 +53,7 @@ func main() {
 		}).GET().POST()
 		router.HandleFunc("/:foo/:bar", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
-			gz:=gzip.NewGzipWriter(w,r)
-			defer gz.Close()
-			gz.Write([]byte(fmt.Sprintf("group Method:%s foo:%s bar:%s\n",r.Method,params["foo"], params["bar"])))
+			gzip.WriteGzip(w,r,http.StatusOK,[]byte(fmt.Sprintf("group Method:%s foo:%s bar:%s\n",r.Method,params["foo"], params["bar"])))
 		}).All()
 	})
 	router.Once()//before listen
