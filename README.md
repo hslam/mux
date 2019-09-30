@@ -54,7 +54,7 @@ func main() {
 			w.Write([]byte(fmt.Sprintf("group Method:%s foo:%s bar:%s\n",r.Method,params["foo"], params["bar"])))
 		}).All()
 	})
-	router.Once()
+	router.Once()//before listen
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
