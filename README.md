@@ -63,7 +63,7 @@ func main() {
 }
 ```
 
-curl http://localhost:8080/hello/123/mort/456/huang
+curl -XGET http://localhost:8080/hello/123/mort/456/huang
 ```
 hello Method:GET key:123 value:456
 ```
@@ -71,7 +71,7 @@ curl -XPOST http://localhost:8080/hello/123/mort/456/huang
 ```
 hello Method:POST key:123 value:456
 ```
-curl http://localhost:8080/group/123/mort/456/huang
+curl -XGET http://localhost:8080/group/123/mort/456/huang
 ```
 group Method:GET key:123 value:456
 ```
@@ -79,7 +79,7 @@ curl -XPOST http://localhost:8080/group/123/mort/456/huang
 ```
 group Method:POST key:123 value:456
 ```
-curl http://localhost:8080/group/123/456
+curl -XGET http://localhost:8080/group/123/456
 ```
 group Method:GET foo:123 bar:456
 ```
