@@ -22,10 +22,11 @@ type Router struct {
 	mux  		map[string]*Prefix
 	middlewares []http.HandlerFunc
 	notFound 	http.HandlerFunc
+	groups 		map[string]*Router
+	group		string
 }
 type Prefix struct {
 	m 			map[string]*Entry
-	pattern 	string
 	prefix 		string
 }
 type Entry struct {
@@ -45,6 +46,16 @@ type Entry struct {
 func New() *Router {
 	router := &Router{
 		mux: make(map[string]*Prefix),
+		groups: make(map[string]*Router),
+	}
+	return router
+}
+
+func newGroup(group string) *Router {
+	router := &Router{
+		mux: make(map[string]*Prefix),
+		groups: make(map[string]*Router),
+		group:group,
 	}
 	return router
 }
@@ -56,39 +67,13 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	router.mut.RLock()
 	defer router.mut.RUnlock()
-	if entry:=router.getHandlerFunc(r.URL.Path);entry!=nil{
-		if r.Method=="POST"&&entry.post!=nil{
-			router.middleware(w,r)
-			entry.post(w,r)
-			return
-		}else if r.Method=="PUT"&&entry.put!=nil{
-			router.middleware(w,r)
-			entry.put(w,r)
-			return
-		}else if r.Method=="DELETE"&&entry.delete!=nil{
-			router.middleware(w,r)
-			entry.delete(w,r)
-			return
-		}else if r.Method=="PATCH"&&entry.patch!=nil{
-			router.middleware(w,r)
-			entry.patch(w,r)
-			return
-		}else if r.Method=="HEAD"&&entry.head!=nil{
-			router.middleware(w,r)
-			entry.head(w,r)
-			return
-		}else if r.Method=="OPTIONS"&&entry.options!=nil{
-			router.middleware(w,r)
-			entry.options(w,r)
-			return
-		}else if r.Method=="GET"&&entry.get!=nil{
-			router.middleware(w,r)
-			entry.get(w,r)
-			return
-		}else if r.Method=="GET"{
-			router.middleware(w,r)
-			entry.handler(w,r)
-			return
+	if router.Serve(w,r){
+		return
+	}else {
+		for _,groupRouter:=range router.groups{
+			if groupRouter.Serve(w,r){
+				return
+			}
 		}
 	}
 	if router.notFound!=nil{
@@ -97,7 +82,44 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
 }
-
+func (router *Router) Serve(w http.ResponseWriter, r *http.Request)bool {
+	if entry:=router.getHandlerFunc(r.URL.Path);entry!=nil{
+		if r.Method=="POST"&&entry.post!=nil{
+			router.middleware(w,r)
+			entry.post(w,r)
+			return true
+		}else if r.Method=="PUT"&&entry.put!=nil{
+			router.middleware(w,r)
+			entry.put(w,r)
+			return true
+		}else if r.Method=="DELETE"&&entry.delete!=nil{
+			router.middleware(w,r)
+			entry.delete(w,r)
+			return true
+		}else if r.Method=="PATCH"&&entry.patch!=nil{
+			router.middleware(w,r)
+			entry.patch(w,r)
+			return true
+		}else if r.Method=="HEAD"&&entry.head!=nil{
+			router.middleware(w,r)
+			entry.head(w,r)
+			return true
+		}else if r.Method=="OPTIONS"&&entry.options!=nil{
+			router.middleware(w,r)
+			entry.options(w,r)
+			return true
+		}else if r.Method=="GET"&&entry.get!=nil{
+			router.middleware(w,r)
+			entry.get(w,r)
+			return true
+		}else if r.Method=="GET"{
+			router.middleware(w,r)
+			entry.handler(w,r)
+			return true
+		}
+	}
+	return false
+}
 func (router *Router) getHandlerFunc(path string) *Entry{
 	if prefix,key,ok:=router.matchParams(path);ok {
 		if entry, ok := router.mux[prefix].m[key]; ok {
@@ -110,7 +132,7 @@ func (router *Router) getHandlerFunc(path string) *Entry{
 func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entry{
 	router.mut.RLock()
 	defer router.mut.RUnlock()
-	prefix,key,match,params:=router.parseParams(pattern)
+	prefix,key,match,params:=router.parseParams(router.group+pattern)
 	if v, ok := router.mux[prefix]; ok {
 		if entry, ok := v.m[key]; ok {
 			entry.handler=handler
@@ -121,7 +143,7 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entr
 			return entry
 		}
 	}
-	router.mux[prefix]=&Prefix{m:make(map[string]*Entry),pattern:pattern,prefix:prefix}
+	router.mux[prefix]=&Prefix{m:make(map[string]*Entry),prefix:prefix}
 	entry:=&Entry{}
 	entry.handler=handler
 	entry.key=key
@@ -129,6 +151,15 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entr
 	entry.params=params
 	router.mux[prefix].m[key] = entry
 	return entry
+}
+
+func (router *Router) Group(group string,f func(router *Router)){
+	groupRouter:=newGroup(group)
+	f(groupRouter)
+	if _,ok:=router.groups[group];ok{
+		panic("Group Existed")
+	}
+	router.groups[group]=groupRouter
 }
 func (router *Router) SetNotFound(handler http.HandlerFunc){
 	router.mut.RLock()
@@ -167,7 +198,7 @@ func (router *Router) matchParams(path string)(string,string,bool){
 	for _,p:=range router.mux{
 		if strings.HasPrefix(path,p.prefix){
 			for _,v:=range p.m{
-				form:=strings.Split(strings.Trim(path,p.prefix),"/")
+				form:=strings.Split(strings.TrimLeft(path,p.prefix),"/")
 				if len(form)==len(v.match){
 					key:=""
 					for i:=0;i<len(form);i++ {

@@ -15,7 +15,13 @@ func main() {
 	})
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
-		w.Write([]byte(fmt.Sprintf("hello world Method:%s key:%s value:%s",r.Method,params["key"], params["value"])))
+		w.Write([]byte(fmt.Sprintf("hello Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
 	}).GET().POST()
+	router.Group("/group", func(router *mux.Router) {
+		router.HandleFunc("/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
+			params:=router.Params(r)
+			w.Write([]byte(fmt.Sprintf("group Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
+		}).GET().POST()
+	})
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

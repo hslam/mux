@@ -3,8 +3,8 @@
 
 ## Features
 
-* Easy to use
-* Middlewares
+* Middleware
+* Group
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found HandlerFunc setting
@@ -39,24 +39,38 @@ func main() {
 	})
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
-		w.Write([]byte(fmt.Sprintf("hello world Method:%s key:%s value:%s",r.Method,params["key"], params["value"])))
+		w.Write([]byte(fmt.Sprintf("hello Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
 	}).GET().POST()
+	router.Group("/group", func(router *mux.Router) {
+		router.HandleFunc("/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
+			params:=router.Params(r)
+			w.Write([]byte(fmt.Sprintf("group Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
+		}).GET().POST()
+	})
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
 
-
 curl http://localhost:8080/hello/123/mort/456/huang
 #### Output
 ```
-hello world Method:GET key:123 value:456
+hello Method:GET key:123 value:456
 ```
 curl -XPOST http://localhost:8080/hello/123/mort/456/huang
 #### Output
 ```
-hello world Method:POST key:123 value:456
+hello Method:POST key:123 value:456
 ```
-
+curl http://localhost:8080/group/123/mort/456/huang
+#### Output
+```
+group Method:GET key:123 value:456
+```
+curl -XPOST http://localhost:8080/group/123/mort/456/huang
+#### Output
+```
+group Method:POST key:123 value:456
+```
 ### Licence
 This package is licenced under a MIT licence (Copyright (c) 2017 Mort Huang)
 
