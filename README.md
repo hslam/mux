@@ -3,11 +3,11 @@
 
 ## Features
 
-#### Easy to use
-#### Middlewares
-#### Path matching and routing
-#### Fully compatible with the http.HandlerFunc
-#### Not found HandlerFunc setting
+* Easy to use
+* Middlewares
+* Path matching and routing
+* Fully compatible with the http.HandlerFunc
+* Not found HandlerFunc setting
 
 ## Get started
 
