@@ -51,11 +51,7 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	router.mut.RLock()
 	defer router.mut.RUnlock()
 	if entry:=router.getHandlerFunc(r.URL.Path);entry!=nil{
-		if r.Method=="GET"&&entry.get!=nil{
-			router.middleware(w,r)
-			entry.get(w,r)
-			return
-		}else if r.Method=="POST"&&entry.post!=nil{
+		if r.Method=="POST"&&entry.post!=nil{
 			router.middleware(w,r)
 			entry.post(w,r)
 			return
@@ -78,6 +74,14 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}else if r.Method=="OPTIONS"&&entry.options!=nil{
 			router.middleware(w,r)
 			entry.options(w,r)
+			return
+		}else if r.Method=="GET"&&entry.get!=nil{
+			router.middleware(w,r)
+			entry.get(w,r)
+			return
+		}else if r.Method=="GET"{
+			router.middleware(w,r)
+			entry.handler(w,r)
 			return
 		}
 	}
@@ -125,7 +129,7 @@ func (router *Router) SetNotFound(handler http.HandlerFunc){
 	defer router.mut.RUnlock()
 	router.notFound=handler
 }
-func (router *Router) Middleware(handler http.HandlerFunc){
+func (router *Router) Use(handler http.HandlerFunc){
 	router.mut.RLock()
 	defer router.mut.RUnlock()
 	router.middlewares=append(router.middlewares,handler)

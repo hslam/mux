@@ -7,10 +7,13 @@ import (
 )
 func main() {
 	router := mux.New()
-	router.Middleware(func(w http.ResponseWriter, r *http.Request) {
+	router.Use(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Print(r.Host)
+	})
+	router.Use(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(r.URL.Path)
 	})
-	router.HandleFunc("/hello/:key/meng/:value/huang", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
 		w.Write([]byte(fmt.Sprintf("hello world Method:%s key:%s value:%s",r.Method,params["key"], params["value"])))
 	}).GET().POST()

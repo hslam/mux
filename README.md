@@ -1,6 +1,12 @@
 # mux
-## A worker pool implementation written in Golang.
+## A url path router implementation written in Golang.
 
+## Features
+Easy to use
+Middlewares
+Path matching and routing
+Fully compatible with the http.HandlerFunc
+Not found HandlerFunc setting
 ## Get started
 
 ### Install
@@ -23,10 +29,13 @@ import (
 )
 func main() {
 	router := mux.New()
-	router.Middleware(func(w http.ResponseWriter, r *http.Request) {
+	router.Use(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Print(r.Host)
+	})
+	router.Use(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(r.URL.Path)
 	})
-	router.HandleFunc("/hello/:key/meng/:value/huang", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
 		w.Write([]byte(fmt.Sprintf("hello world Method:%s key:%s value:%s",r.Method,params["key"], params["value"])))
 	}).GET().POST()
@@ -35,14 +44,12 @@ func main() {
 ```
 
 
-http://127.0.0.1:8080/count
-```
-curl http://localhost:8080/hello/123/meng/456/huang
+curl http://localhost:8080/hello/123/mort/456/huang
 #### Output
 ```
 hello world Method:GET key:123 value:456
 ```
-curl -XPOST http://localhost:8080/hello/123/meng/456/huang
+curl -XPOST http://localhost:8080/hello/123/mort/456/huang
 #### Output
 ```
 hello world Method:POST key:123 value:456
@@ -53,6 +60,6 @@ This package is licenced under a MIT licence (Copyright (c) 2017 Mort Huang)
 
 
 ### Authors
-workerpool was written by Mort Huang.
+mux was written by Mort Huang.
 
 
