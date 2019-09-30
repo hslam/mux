@@ -117,7 +117,7 @@ curl -XOPTIONS http://localhost:8080/group/123/456
 group Method:OPTIONS foo:123 bar:456
 ```
 ### Licence
-This package is licenced under a MIT licence (Copyright (c) 2017 Mort Huang)
+This package is licenced under a MIT licence (Copyright (c) 2019 Mort Huang)
 
 
 ### Authors
