@@ -64,37 +64,30 @@ func main() {
 ```
 
 curl http://localhost:8080/hello/123/mort/456/huang
-#### Output
 ```
 hello Method:GET key:123 value:456
 ```
 curl -XPOST http://localhost:8080/hello/123/mort/456/huang
-#### Output
 ```
 hello Method:POST key:123 value:456
 ```
 curl http://localhost:8080/group/123/mort/456/huang
-#### Output
 ```
 group Method:GET key:123 value:456
 ```
 curl -XPOST http://localhost:8080/group/123/mort/456/huang
-#### Output
 ```
 group Method:POST key:123 value:456
 ```
 curl http://localhost:8080/group/123/456
-#### Output
 ```
 group Method:GET foo:123 bar:456
 ```
 curl -H "Accept-Encoding: gzip,deflate" --compressed http://localhost:8080/group/123/456
-#### gzip Output
 ```
 group Method:GET foo:123 bar:456
 ```
 curl -XPOST http://localhost:8080/group/123/456
-#### Output
 ```
 group Method:POST foo:123 bar:456
 ```
@@ -103,7 +96,6 @@ curl --HEAD http://localhost:8080/group/123/456
 or
 
 curl -I http://localhost:8080/group/123/456
-#### Output
 ```
 HTTP/1.1 200 OK
 Date: Mon, 30 Sep 2019 10:01:11 GMT
@@ -111,12 +103,10 @@ Content-Length: 34
 Content-Type: text/plain; charset=utf-8
 ```
 curl -XPATCH http://localhost:8080/group/123/456
-#### Output
 ```
 group Method:PATCH foo:123 bar:456
 ```
 curl -XOPTIONS http://localhost:8080/group/123/456
-#### Output
 ```
 group Method:OPTIONS foo:123 bar:456
 ```
