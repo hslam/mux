@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"sync"
 	"strings"
+	"fmt"
 )
 const (
 	GET         = iota
@@ -48,6 +49,11 @@ func New() *Router {
 	return router
 }
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			http.Error(w,fmt.Sprint(err),http.StatusBadRequest)
+		}
+	}()
 	router.mut.RLock()
 	defer router.mut.RUnlock()
 	if entry:=router.getHandlerFunc(r.URL.Path);entry!=nil{
