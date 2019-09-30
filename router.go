@@ -18,7 +18,6 @@ const (
 	CONNECT
 )
 
-
 type Router struct {
 	mut    		sync.RWMutex
 	mux  		map[string]*Prefix
@@ -72,11 +71,11 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	router.mut.RLock()
 	defer router.mut.RUnlock()
-	if router.Serve(w,r){
+	if router.serve(w,r){
 		return
 	}else {
 		for _,groupRouter:=range router.groups{
-			if groupRouter.Serve(w,r){
+			if groupRouter.serve(w,r){
 				return
 			}
 		}
@@ -87,43 +86,39 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Error(w, "404 Not Found : "+r.URL.String(), http.StatusNotFound)
 }
-func (router *Router) Serve(w http.ResponseWriter, r *http.Request)bool {
+func (router *Router) serve(w http.ResponseWriter, r *http.Request)bool {
 	if entry:=router.getHandlerFunc(r.URL.Path);entry!=nil{
 		if r.Method=="GET"&&entry.get!=nil{
-			router.middleware(w,r)
-			entry.get(w,r)
+			router.serveEntry(entry.get,w,r)
 			return true
 		}else if r.Method=="POST"&&entry.post!=nil{
-			router.middleware(w,r)
-			entry.post(w,r)
+			router.serveEntry(entry.post,w,r)
 			return true
 		}else if r.Method=="PUT"&&entry.put!=nil{
-			router.middleware(w,r)
-			entry.put(w,r)
+			router.serveEntry(entry.put,w,r)
 			return true
 		}else if r.Method=="DELETE"&&entry.delete!=nil{
-			router.middleware(w,r)
-			entry.delete(w,r)
+			router.serveEntry(entry.delete,w,r)
 			return true
 		}else if r.Method=="PATCH"&&entry.patch!=nil{
-			router.middleware(w,r)
-			entry.patch(w,r)
+			router.serveEntry(entry.patch,w,r)
 			return true
 		}else if r.Method=="HEAD"&&entry.head!=nil{
-			router.middleware(w,r)
-			entry.head(w,r)
+			router.serveEntry(entry.head,w,r)
 			return true
 		}else if r.Method=="OPTIONS"&&entry.options!=nil{
-			router.middleware(w,r)
-			entry.options(w,r)
+			router.serveEntry(entry.options,w,r)
 			return true
 		}else if entry.handler!=nil{
-			router.middleware(w,r)
-			entry.handler(w,r)
+			router.serveEntry(entry.handler,w,r)
 			return true
 		}
 	}
 	return false
+}
+func (router *Router) serveEntry(handler http.HandlerFunc,w http.ResponseWriter, r *http.Request) {
+	router.middleware(w,r)
+	handler(w,r)
 }
 func (router *Router) getHandlerFunc(path string) *Entry{
 	if prefix,key,ok:=router.matchParams(path);ok {
@@ -146,16 +141,25 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entr
 			entry.params=params
 			router.mux[prefix].m[key] = entry
 			return entry
+		}else {
+			entry:=&Entry{}
+			entry.handler=handler
+			entry.key=key
+			entry.match=match
+			entry.params=params
+			router.mux[prefix].m[key] = entry
+			return entry
 		}
+	}else {
+		router.mux[prefix]=&Prefix{m:make(map[string]*Entry),prefix:prefix}
+		entry:=&Entry{}
+		entry.handler=handler
+		entry.key=key
+		entry.match=match
+		entry.params=params
+		router.mux[prefix].m[key] = entry
+		return entry
 	}
-	router.mux[prefix]=&Prefix{m:make(map[string]*Entry),prefix:prefix}
-	entry:=&Entry{}
-	entry.handler=handler
-	entry.key=key
-	entry.match=match
-	entry.params=params
-	router.mux[prefix].m[key] = entry
-	return entry
 }
 
 func (router *Router) Group(group string,f func(router *Router)){
@@ -169,6 +173,7 @@ func (router *Router) Group(group string,f func(router *Router)){
 	if _,ok:=router.groups[group];ok{
 		panic("Group Existed")
 	}
+	groupRouter.middlewares=router.middlewares
 	router.groups[group]=groupRouter
 }
 func (router *Router) NotFound(handler http.HandlerFunc){
@@ -176,7 +181,7 @@ func (router *Router) NotFound(handler http.HandlerFunc){
 	defer router.mut.RUnlock()
 	router.notFound=handler
 }
-func (router *Router) Middleware(handler http.HandlerFunc){
+func (router *Router) Use(handler http.HandlerFunc){
 	router.mut.RLock()
 	defer router.mut.RUnlock()
 	router.middlewares=append(router.middlewares,handler)
@@ -186,6 +191,7 @@ func (router *Router) middleware(w http.ResponseWriter, r *http.Request){
 		handler(w,r)
 	}
 }
+
 func (router *Router) Params(r *http.Request)(map[string]string){
 	router.mut.RLock()
 	defer router.mut.RUnlock()
