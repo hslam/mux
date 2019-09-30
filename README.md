@@ -71,6 +71,17 @@ curl -XPOST http://localhost:8080/group/123/mort/456/huang
 ```
 group Method:POST key:123 value:456
 ```
+
+curl http://localhost:8080/group/123/456
+#### Output
+```
+group Method:GET foo:123 bar:456
+```
+curl -XPOST http://localhost:8080/group/123/456
+#### Output
+```
+group Method:POST foo:123 bar:456
+```
 ### Licence
 This package is licenced under a MIT licence (Copyright (c) 2017 Mort Huang)
 
