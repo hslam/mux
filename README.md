@@ -46,6 +46,10 @@ func main() {
 			params:=router.Params(r)
 			w.Write([]byte(fmt.Sprintf("group Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
 		}).GET().POST()
+		router.HandleFunc("/:foo/:bar", func(w http.ResponseWriter, r *http.Request) {
+			params:=router.Params(r)
+			w.Write([]byte(fmt.Sprintf("group Method:%s foo:%s bar:%s\n",r.Method,params["foo"], params["bar"])))
+		}).GET().POST()
 	})
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
