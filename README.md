@@ -7,7 +7,7 @@
 * Group
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
-* Not found HandlerFunc setting
+* Not found
 
 ## Get started
 
@@ -31,10 +31,13 @@ import (
 )
 func main() {
 	router := mux.New()
-	router.Use(func(w http.ResponseWriter, r *http.Request) {
+	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
+	})
+	router.Middleware(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Print(r.Host)
 	})
-	router.Use(func(w http.ResponseWriter, r *http.Request) {
+	router.Middleware(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(r.URL.Path)
 	})
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
@@ -49,8 +52,9 @@ func main() {
 		router.HandleFunc("/:foo/:bar", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
 			w.Write([]byte(fmt.Sprintf("group Method:%s foo:%s bar:%s\n",r.Method,params["foo"], params["bar"])))
-		}).GET().POST()
+		}).All()
 	})
+	router.Once()
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
@@ -75,7 +79,6 @@ curl -XPOST http://localhost:8080/group/123/mort/456/huang
 ```
 group Method:POST key:123 value:456
 ```
-
 curl http://localhost:8080/group/123/456
 #### Output
 ```
@@ -85,6 +88,28 @@ curl -XPOST http://localhost:8080/group/123/456
 #### Output
 ```
 group Method:POST foo:123 bar:456
+```
+curl --HEAD http://localhost:8080/group/123/456
+
+or
+
+curl -I http://localhost:8080/group/123/456
+#### Output
+```
+HTTP/1.1 200 OK
+Date: Mon, 30 Sep 2019 10:01:11 GMT
+Content-Length: 34
+Content-Type: text/plain; charset=utf-8
+```
+curl -XPATCH http://localhost:8080/group/123/456
+#### Output
+```
+group Method:PATCH foo:123 bar:456
+```
+curl -XOPTIONS http://localhost:8080/group/123/456
+#### Output
+```
+group Method:OPTIONS foo:123 bar:456
 ```
 ### Licence
 This package is licenced under a MIT licence (Copyright (c) 2017 Mort Huang)

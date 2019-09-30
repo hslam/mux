@@ -7,10 +7,13 @@ import (
 )
 func main() {
 	router := mux.New()
-	router.Use(func(w http.ResponseWriter, r *http.Request) {
+	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
+	})
+	router.Middleware(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Print(r.Host)
 	})
-	router.Use(func(w http.ResponseWriter, r *http.Request) {
+	router.Middleware(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(r.URL.Path)
 	})
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +28,8 @@ func main() {
 		router.HandleFunc("/:foo/:bar", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
 			w.Write([]byte(fmt.Sprintf("group Method:%s foo:%s bar:%s\n",r.Method,params["foo"], params["bar"])))
-		}).GET().POST()
+		}).All()
 	})
+	router.Once()
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

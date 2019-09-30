@@ -14,6 +14,8 @@ const (
 	PATCH
 	HEAD
 	OPTIONS
+	TRACE
+	CONNECT
 )
 
 
@@ -41,6 +43,9 @@ type Entry struct {
 	patch 		http.HandlerFunc
 	head     	http.HandlerFunc
 	options	 	http.HandlerFunc
+	trace	 	http.HandlerFunc
+	connect	 	http.HandlerFunc
+
 }
 
 func New() *Router {
@@ -80,11 +85,15 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		router.notFound(w,r)
 		return
 	}
-	http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
+	http.Error(w, "404 Not Found : "+r.URL.String(), http.StatusNotFound)
 }
 func (router *Router) Serve(w http.ResponseWriter, r *http.Request)bool {
 	if entry:=router.getHandlerFunc(r.URL.Path);entry!=nil{
-		if r.Method=="POST"&&entry.post!=nil{
+		if r.Method=="GET"&&entry.get!=nil{
+			router.middleware(w,r)
+			entry.get(w,r)
+			return true
+		}else if r.Method=="POST"&&entry.post!=nil{
 			router.middleware(w,r)
 			entry.post(w,r)
 			return true
@@ -108,11 +117,7 @@ func (router *Router) Serve(w http.ResponseWriter, r *http.Request)bool {
 			router.middleware(w,r)
 			entry.options(w,r)
 			return true
-		}else if r.Method=="GET"&&entry.get!=nil{
-			router.middleware(w,r)
-			entry.get(w,r)
-			return true
-		}else if r.Method=="GET"{
+		}else if entry.handler!=nil{
 			router.middleware(w,r)
 			entry.handler(w,r)
 			return true
@@ -156,17 +161,22 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entr
 func (router *Router) Group(group string,f func(router *Router)){
 	groupRouter:=newGroup(group)
 	f(groupRouter)
+	for _,p:=range groupRouter.mux{
+		for _,v:=range p.m{
+			v.End()
+		}
+	}
 	if _,ok:=router.groups[group];ok{
 		panic("Group Existed")
 	}
 	router.groups[group]=groupRouter
 }
-func (router *Router) SetNotFound(handler http.HandlerFunc){
+func (router *Router) NotFound(handler http.HandlerFunc){
 	router.mut.RLock()
 	defer router.mut.RUnlock()
 	router.notFound=handler
 }
-func (router *Router) Use(handler http.HandlerFunc){
+func (router *Router) Middleware(handler http.HandlerFunc){
 	router.mut.RLock()
 	defer router.mut.RUnlock()
 	router.middlewares=append(router.middlewares,handler)
@@ -252,7 +262,16 @@ func (router *Router) parseParams(pattern string)(string,string,[]string,map[str
 		prefix=pattern
 	}
 	return prefix,key,match,params
-
+}
+func (router *Router) Once(){
+	for _,p:=range router.mux{
+		for _,v:=range p.m{
+			v.End()
+		}
+	}
+	for _,groupRouter:=range router.groups{
+		groupRouter.Once()
+	}
 }
 func (entry *Entry) GET() *Entry{
 	entry.get=entry.handler
@@ -281,4 +300,27 @@ func (entry *Entry) HEAD() *Entry{
 func (entry *Entry) OPTIONS() *Entry{
 	entry.options=entry.handler
 	return entry
+}
+func (entry *Entry) TRACE() *Entry{
+	entry.trace=entry.handler
+	return entry
+}
+func (entry *Entry) CONNECT() *Entry{
+	entry.connect=entry.handler
+	return entry
+}
+func (entry *Entry) End(){
+	entry.handler=nil
+}
+func (entry *Entry) All() {
+	entry.GET()
+	entry.POST()
+	entry.HEAD()
+	entry.OPTIONS()
+	entry.PUT()
+	entry.PATCH()
+	entry.DELETE()
+	entry.TRACE()
+	entry.CONNECT()
+	entry.End()
 }
