@@ -9,6 +9,7 @@
 * Fully compatible with the http.HandlerFunc
 * Not found
 * Gzip
+* Proxy
 
 ## Get started
 
