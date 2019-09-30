@@ -8,6 +8,7 @@
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found
+* Gzip
 
 ## Get started
 
