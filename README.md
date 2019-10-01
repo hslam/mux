@@ -91,15 +91,15 @@ curl -XOPTIONS http://localhost:8080/hello
 hello world Method:OPTIONS
 ```
 
-curl -XGET http://localhost:8080/hello/123/mort/456/huang
+curl http://localhost:8080/hello/123/mort/456/huang
 ```
 hello key:123 value:456
 ```
-curl -XGET http://localhost:8080/group/foo/123
+curl http://localhost:8080/group/foo/123
 ```
 group/foo id:123
 ```
-curl -XGET http://localhost:8080/group/bar/123
+curl http://localhost:8080/group/bar/123
 ```
 group/bar id:123
 ```
