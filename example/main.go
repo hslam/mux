@@ -18,16 +18,16 @@ func main() {
 	}).All()
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
-		w.Write([]byte(fmt.Sprintf("hello Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
-	}).GET().POST()
+		w.Write([]byte(fmt.Sprintf("hello key:%s value:%s\n",params["key"], params["value"])))
+	}).GET()
 	router.Group("/group", func(router *mux.Router) {
 		router.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
-			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n",r.Method,params["id"])))
+			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n",params["id"])))
 		}).GET()
 		router.HandleFunc("/bar/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
-			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n",r.Method,params["id"])))
+			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n",params["id"])))
 		}).GET()
 	})
 	router.Once()//before listen
