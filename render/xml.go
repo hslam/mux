@@ -2,7 +2,6 @@ package render
 import (
 	"net/http"
 	"encoding/xml"
-	"fmt"
 )
 
 func WriteXml(w http.ResponseWriter, r *http.Request, status int, obj interface{}) (err error) {

@@ -2,7 +2,6 @@ package render
 import (
 	"net/http"
 	"encoding/json"
-	"fmt"
 )
 
 func WriteJson(w http.ResponseWriter, r *http.Request, status int, obj interface{}) (err error) {
