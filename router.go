@@ -214,7 +214,11 @@ func (router *Router) matchParams(path string)(string,string,bool){
 	for _,p:=range router.mux{
 		if strings.HasPrefix(path,p.prefix){
 			for _,v:=range p.m{
-				form:=strings.Split(strings.TrimLeft(path,p.prefix),"/")
+				r:=strings.TrimLeft(path,p.prefix)
+				if r==""{
+					return p.prefix,v.key,true
+				}
+				form:=strings.Split(r,"/")
 				if len(form)==len(v.match){
 					key:=""
 					for i:=0;i<len(form);i++ {

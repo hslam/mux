@@ -8,8 +8,6 @@
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found
-* Gzip
-* Proxy
 
 ## Get started
 
@@ -29,7 +27,6 @@ import (
 	"log"
 	"net/http"
 	"hslam.com/mgit/Mort/mux"
-	"hslam.com/mgit/Mort/mux/gzip"
 	"fmt"
 )
 func main() {
@@ -38,28 +35,60 @@ func main() {
 		http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
 	})
 	router.Use(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-	})
-	router.Use(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Host:%s Path:%s Method:%s\n",r.Host,r.URL.Path,r.Method)
 	})
+	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("hello world Method:%s\n",r.Method)))
+	}).All()
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
 		w.Write([]byte(fmt.Sprintf("hello Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
 	}).GET().POST()
 	router.Group("/group", func(router *mux.Router) {
-		router.HandleFunc("/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
+		router.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
-			w.Write([]byte(fmt.Sprintf("group Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
-		}).GET().POST()
-		router.HandleFunc("/:foo/:bar", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n",r.Method,params["id"])))
+		}).GET()
+		router.HandleFunc("/bar/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
-			gzip.WriteGzip(w,r,http.StatusOK,[]byte(fmt.Sprintf("group Method:%s foo:%s bar:%s\n",r.Method,params["foo"], params["bar"])))
-		}).All()
+			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n",r.Method,params["id"])))
+		}).GET()
 	})
 	router.Once()//before listen
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
+```
+
+curl -XGET http://localhost:8080/hello
+```
+hello world Method:GET
+```
+
+curl -XPOST http://localhost:8080/hello
+```
+hello world Method:POST
+```
+
+curl --HEAD http://localhost:8080/hello
+
+or
+
+curl -I http://localhost:8080/hello
+```
+HTTP/1.1 200 OK
+Date: Tue, 01 Oct 2019 20:28:42 GMT
+Content-Length: 24
+Content-Type: text/plain; charset=utf-8
+```
+
+curl -XPATCH http://localhost:8080/hello
+```
+hello world Method:PATCH
+```
+
+curl -XOPTIONS http://localhost:8080/hello
+```
+hello world Method:OPTIONS
 ```
 
 curl -XGET http://localhost:8080/hello/123/mort/456/huang
@@ -70,51 +99,15 @@ curl -XPOST http://localhost:8080/hello/123/mort/456/huang
 ```
 hello Method:POST key:123 value:456
 ```
-curl -XGET http://localhost:8080/group/123/mort/456/huang
+curl -XGET http://localhost:8080/group/foo/123
 ```
-group Method:GET key:123 value:456
+group/foo Method:GET id:123
 ```
-curl -XPOST http://localhost:8080/group/123/mort/456/huang
+curl -XGET http://localhost:8080/group/bar/123
 ```
-group Method:POST key:123 value:456
+group/bar Method:GET id:123
 ```
-curl -XGET http://localhost:8080/group/123/456
-```
-group Method:GET foo:123 bar:456
-```
-curl -XPOST http://localhost:8080/group/123/456
-```
-group Method:POST foo:123 bar:456
-```
-curl -I -H "Accept-Encoding: gzip,deflate" --compressed http://localhost:8080/group/123/456
-```
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: *
-Content-Encoding: gzip
-Content-Type: text/plain; charset=utf-8
-Vary: Accept-Encoding
-Date: Mon, 30 Sep 2019 14:49:05 GMT
-Content-Length: 58
-```
-curl --HEAD http://localhost:8080/group/123/456
 
-or
-
-curl -I http://localhost:8080/group/123/456
-```
-HTTP/1.1 200 OK
-Date: Mon, 30 Sep 2019 10:01:11 GMT
-Content-Length: 34
-Content-Type: text/plain; charset=utf-8
-```
-curl -XPATCH http://localhost:8080/group/123/456
-```
-group Method:PATCH foo:123 bar:456
-```
-curl -XOPTIONS http://localhost:8080/group/123/456
-```
-group Method:OPTIONS foo:123 bar:456
-```
 ### Licence
 This package is licenced under a MIT licence (Copyright (c) 2019 Mort Huang)
 

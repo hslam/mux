@@ -3,7 +3,6 @@ import (
 	"log"
 	"net/http"
 	"hslam.com/mgit/Mort/mux"
-	"hslam.com/mgit/Mort/mux/gzip"
 	"fmt"
 )
 func main() {
@@ -12,24 +11,24 @@ func main() {
 		http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
 	})
 	router.Use(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-	})
-	router.Use(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Host:%s Path:%s Method:%s\n",r.Host,r.URL.Path,r.Method)
 	})
+	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("hello world Method:%s\n",r.Method)))
+	}).All()
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
 		w.Write([]byte(fmt.Sprintf("hello Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
 	}).GET().POST()
 	router.Group("/group", func(router *mux.Router) {
-		router.HandleFunc("/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
+		router.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
-			w.Write([]byte(fmt.Sprintf("group Method:%s key:%s value:%s\n",r.Method,params["key"], params["value"])))
-		}).GET().POST()
-		router.HandleFunc("/:foo/:bar", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n",r.Method,params["id"])))
+		}).GET()
+		router.HandleFunc("/bar/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
-			gzip.WriteGzip(w,r,http.StatusOK,[]byte(fmt.Sprintf("group Method:%s foo:%s bar:%s\n",r.Method,params["foo"], params["bar"])))
-		}).All()
+			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n",r.Method,params["id"])))
+		}).GET()
 	})
 	router.Once()//before listen
 	log.Fatal(http.ListenAndServe(":8080", router))
