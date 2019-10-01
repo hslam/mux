@@ -22,7 +22,7 @@ func WriteBody(w http.ResponseWriter, r *http.Request,httpStatus int,Body []byte
 	w.Write(Body)
 	return true
 }
-func WritePage(w http.ResponseWriter, r *http.Request,httpStatus int,f string) bool {
+func WritePage(w http.ResponseWriter, r *http.Request,status int,f string) bool {
 	var Body, err = LoadFile(f)
 	if err!=nil{
 		return false
@@ -37,7 +37,7 @@ func WritePage(w http.ResponseWriter, r *http.Request,httpStatus int,f string) b
 	} else {
 		w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	}
-	w.WriteHeader(httpStatus)
+	w.WriteHeader(status)
 	w.Write(Body)
 	return true
 }

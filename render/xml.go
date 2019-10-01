@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func WriteXml(w http.ResponseWriter, r *http.Request, httpStatus int, obj interface{}) (err error) {
+func WriteXml(w http.ResponseWriter, r *http.Request, status int, obj interface{}) (err error) {
 	var bytes []byte
 	if r.FormValue("xml") != "" {
 		bytes, err = xml.MarshalIndent(obj, "", "  ")
@@ -15,24 +15,8 @@ func WriteXml(w http.ResponseWriter, r *http.Request, httpStatus int, obj interf
 	if err != nil {
 		return
 	}
-	callback := r.FormValue("callback")
-	if callback == "" {
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(httpStatus)
-		_, err = w.Write(bytes)
-	} else {
-		w.Header().Set("Content-Type", "application/javascript")
-		w.WriteHeader(httpStatus)
-		if _, err = w.Write([]uint8(callback)); err != nil {
-			return
-		}
-		if _, err = w.Write([]uint8("(")); err != nil {
-			return
-		}
-		fmt.Fprint(w, string(bytes))
-		if _, err = w.Write([]uint8(")")); err != nil {
-			return
-		}
-	}
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(status)
+	_, err = w.Write(bytes)
 	return
 }
