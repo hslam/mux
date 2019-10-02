@@ -43,7 +43,7 @@ func main() {
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
 		w.Write([]byte(fmt.Sprintf("hello key:%s value:%s\n",params["key"], params["value"])))
-	}).GET()
+	}).GET().POST().PUT().DELETE().End()
 	router.Group("/group", func(router *mux.Router) {
 		router.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
