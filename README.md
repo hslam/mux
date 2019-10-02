@@ -54,7 +54,7 @@ func main() {
 			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n",params["id"])))
 		}).GET()
 	})
-	router.Once()//before listen
+	router.Once()//before listening
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
