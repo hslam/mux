@@ -8,6 +8,7 @@
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found
+* [Mux Handler](https://hslam.com/mgit/Mort/handler "handler")
 
 ## Get started
 
