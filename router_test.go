@@ -8,6 +8,7 @@ import (
 
 func TestParseMatch(t *testing.T) {
 	pattern:="/db/:key/meng/:value/huang"
+	pattern=strings.ReplaceAll(pattern,"//","/")
 	i:=strings.Index(pattern,":")
 	prefix:=pattern[:i]
 	match := strings.Split(pattern[i:], "/")

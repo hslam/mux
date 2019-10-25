@@ -87,7 +87,8 @@ func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "404 Not Found : "+r.URL.String(), http.StatusNotFound)
 }
 func (router *Router) serve(w http.ResponseWriter, r *http.Request)bool {
-	if entry:=router.getHandlerFunc(r.URL.Path);entry!=nil{
+	path:=router.replace(r.URL.Path)
+	if entry:=router.getHandlerFunc(path);entry!=nil{
 		if r.Method=="GET"&&entry.get!=nil{
 			router.serveEntry(entry.get,w,r)
 			return true
@@ -132,6 +133,7 @@ func (router *Router) getHandlerFunc(path string) *Entry{
 func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entry{
 	router.mut.RLock()
 	defer router.mut.RUnlock()
+	pattern=router.replace(pattern)
 	prefix,key,match,params:=router.parseParams(router.group+pattern)
 	if v, ok := router.mux[prefix]; ok {
 		if entry, ok := v.m[key]; ok {
@@ -163,6 +165,7 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entr
 }
 
 func (router *Router) Group(group string,f func(router *Router)){
+	group=router.replace(group)
 	groupRouter:=newGroup(group)
 	f(groupRouter)
 	for _,p:=range groupRouter.mux{
@@ -196,9 +199,10 @@ func (router *Router) Params(r *http.Request)(map[string]string){
 	router.mut.RLock()
 	defer router.mut.RUnlock()
 	params:=make(map[string]string)
-	if prefix,key,ok:=router.matchParams(r.URL.Path);ok{
+	path:=router.replace(r.URL.Path)
+	if prefix,key,ok:=router.matchParams(path);ok{
 		if entry,ok:=router.mux[prefix].m[key];ok{
-			strs := strings.Split(strings.Trim(r.URL.Path,prefix), "/")
+			strs := strings.Split(strings.Trim(path,prefix), "/")
 			if len(strs)==len(entry.match){
 				for i:=0;i<len(strs);i++{
 					if entry.match[i]!=""{
@@ -283,6 +287,12 @@ func (router *Router) Once(){
 		groupRouter.Once()
 	}
 }
+func (router *Router) replace(s string) string {
+	for strings.Contains(s,"//"){
+		s=strings.ReplaceAll(s,"//","/")
+	}
+	return s
+}
 func (entry *Entry) GET() *Entry{
 	entry.get=entry.handler
 	return entry
@@ -334,3 +344,4 @@ func (entry *Entry) All() {
 	entry.CONNECT()
 	entry.End()
 }
+
