@@ -8,17 +8,17 @@
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found
-* [Mux Handler](https://hslam.com/mgit/Mort/handler "handler")
+* [Mux Handler](https://hslam.com/git/x/handler "handler")
 
 ## Get started
 
 ### Install
 ```
-go get hslam.com/mgit/Mort/mux
+go get hslam.com/git/x/mux
 ```
 ### Import
 ```
-import "hslam.com/mgit/Mort/mux"
+import "hslam.com/git/x/mux"
 ```
 ### Usage
 #### Example
@@ -27,7 +27,7 @@ package main
 import (
 	"log"
 	"net/http"
-	"hslam.com/mgit/Mort/mux"
+	"hslam.com/git/x/mux"
 	"fmt"
 )
 func main() {
