@@ -1,4 +1,4 @@
-package mux
+package rum
 
 import (
 	"net/http"
@@ -20,7 +20,7 @@ const (
 
 type Router struct {
 	mut    		sync.RWMutex
-	mux  		map[string]*Prefix
+	rum  		map[string]*Prefix
 	middlewares []http.HandlerFunc
 	notFound 	http.HandlerFunc
 	groups 		map[string]*Router
@@ -49,7 +49,7 @@ type Entry struct {
 
 func New() *Router {
 	router := &Router{
-		mux: make(map[string]*Prefix),
+		rum: make(map[string]*Prefix),
 		groups: make(map[string]*Router),
 	}
 	return router
@@ -57,7 +57,7 @@ func New() *Router {
 
 func newGroup(group string) *Router {
 	router := &Router{
-		mux: make(map[string]*Prefix),
+		rum: make(map[string]*Prefix),
 		groups: make(map[string]*Router),
 		group:group,
 	}
@@ -123,7 +123,7 @@ func (router *Router) serveEntry(handler http.HandlerFunc,w http.ResponseWriter,
 }
 func (router *Router) getHandlerFunc(path string) *Entry{
 	if prefix,key,ok:=router.matchParams(path);ok {
-		if entry, ok := router.mux[prefix].m[key]; ok {
+		if entry, ok := router.rum[prefix].m[key]; ok {
 			return entry
 		}
 	}
@@ -135,13 +135,13 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entr
 	defer router.mut.RUnlock()
 	pattern=router.replace(pattern)
 	prefix,key,match,params:=router.parseParams(router.group+pattern)
-	if v, ok := router.mux[prefix]; ok {
+	if v, ok := router.rum[prefix]; ok {
 		if entry, ok := v.m[key]; ok {
 			entry.handler=handler
 			entry.key=key
 			entry.match=match
 			entry.params=params
-			router.mux[prefix].m[key] = entry
+			router.rum[prefix].m[key] = entry
 			return entry
 		}else {
 			entry:=&Entry{}
@@ -149,17 +149,17 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entr
 			entry.key=key
 			entry.match=match
 			entry.params=params
-			router.mux[prefix].m[key] = entry
+			router.rum[prefix].m[key] = entry
 			return entry
 		}
 	}else {
-		router.mux[prefix]=&Prefix{m:make(map[string]*Entry),prefix:prefix}
+		router.rum[prefix]=&Prefix{m:make(map[string]*Entry),prefix:prefix}
 		entry:=&Entry{}
 		entry.handler=handler
 		entry.key=key
 		entry.match=match
 		entry.params=params
-		router.mux[prefix].m[key] = entry
+		router.rum[prefix].m[key] = entry
 		return entry
 	}
 }
@@ -168,7 +168,7 @@ func (router *Router) Group(group string,f func(router *Router)){
 	group=router.replace(group)
 	groupRouter:=newGroup(group)
 	f(groupRouter)
-	for _,p:=range groupRouter.mux{
+	for _,p:=range groupRouter.rum{
 		for _,v:=range p.m{
 			v.End()
 		}
@@ -201,7 +201,7 @@ func (router *Router) Params(r *http.Request)(map[string]string){
 	params:=make(map[string]string)
 	path:=router.replace(r.URL.Path)
 	if prefix,key,ok:=router.matchParams(path);ok{
-		if entry,ok:=router.mux[prefix].m[key];ok{
+		if entry,ok:=router.rum[prefix].m[key];ok{
 			strs := strings.Split(strings.Trim(path,prefix), "/")
 			if len(strs)==len(entry.match){
 				for i:=0;i<len(strs);i++{
@@ -215,7 +215,7 @@ func (router *Router) Params(r *http.Request)(map[string]string){
 	return params
 }
 func (router *Router) matchParams(path string)(string,string,bool){
-	for _,p:=range router.mux{
+	for _,p:=range router.rum{
 		if strings.HasPrefix(path,p.prefix){
 			for _,v:=range p.m{
 				r:=strings.TrimLeft(path,p.prefix)
@@ -278,7 +278,7 @@ func (router *Router) parseParams(pattern string)(string,string,[]string,map[str
 	return prefix,key,match,params
 }
 func (router *Router) Once(){
-	for _,p:=range router.mux{
+	for _,p:=range router.rum{
 		for _,v:=range p.m{
 			v.End()
 		}

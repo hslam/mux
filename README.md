@@ -1,4 +1,4 @@
-# mux
+# rum
 ## A url path router implementation written in Golang.
 
 ## Features
@@ -8,17 +8,17 @@
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found
-* [Mux Handler](https://hslam.com/git/x/handler "handler")
+* [Rum Handler](https://hslam.com/git/x/handler "handler")
 
 ## Get started
 
 ### Install
 ```
-go get hslam.com/git/x/mux
+go get hslam.com/git/x/rum
 ```
 ### Import
 ```
-import "hslam.com/git/x/mux"
+import "hslam.com/git/x/rum"
 ```
 ### Usage
 #### Example
@@ -27,11 +27,11 @@ package main
 import (
 	"log"
 	"net/http"
-	"hslam.com/git/x/mux"
+	"hslam.com/git/x/rum"
 	"fmt"
 )
 func main() {
-	router := mux.New()
+	router := rum.New()
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
 	})
@@ -45,7 +45,7 @@ func main() {
 		params:=router.Params(r)
 		w.Write([]byte(fmt.Sprintf("hello key:%s value:%s\n",params["key"], params["value"])))
 	}).GET().POST().PUT().DELETE().End()
-	router.Group("/group", func(router *mux.Router) {
+	router.Group("/group", func(router *rum.Router) {
 		router.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
 			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n",params["id"])))
@@ -110,6 +110,6 @@ This package is licenced under a MIT licence (Copyright (c) 2019 Mort Huang)
 
 
 ### Authors
-mux was written by Mort Huang.
+rum was written by Mort Huang.
 
 
