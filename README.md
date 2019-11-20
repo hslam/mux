@@ -1,5 +1,5 @@
 # mux
-## A url path router implementation written in Golang.
+A Go implementation of url path router.
 
 ## Features
 

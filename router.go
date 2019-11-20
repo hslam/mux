@@ -110,6 +110,12 @@ func (router *Router) serve(w http.ResponseWriter, r *http.Request)bool {
 		}else if r.Method=="OPTIONS"&&entry.options!=nil{
 			router.serveEntry(entry.options,w,r)
 			return true
+		}else if r.Method=="TRACE"&&entry.trace!=nil{
+			router.serveEntry(entry.trace,w,r)
+			return true
+		}else if r.Method=="CONNECT"&&entry.connect!=nil{
+			router.serveEntry(entry.connect,w,r)
+			return true
 		}else if entry.handler!=nil{
 			router.serveEntry(entry.handler,w,r)
 			return true
