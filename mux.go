@@ -18,12 +18,12 @@ const (
 	CONNECT
 )
 
-type Router struct {
+type Mux struct {
 	mut    		sync.RWMutex
 	prefixes	map[string]*Prefix
 	middlewares []http.HandlerFunc
 	notFound 	http.HandlerFunc
-	groups 		map[string]*Router
+	groups 		map[string]*Mux
 	group		string
 }
 type Prefix struct {
@@ -47,107 +47,107 @@ type Entry struct {
 
 }
 
-func New() *Router {
-	router := &Router{
+func New() *Mux {
+	m := &Mux{
 		prefixes: make(map[string]*Prefix),
-		groups: make(map[string]*Router),
+		groups: make(map[string]*Mux),
 	}
-	return router
+	return m
 }
 
-func newGroup(group string) *Router {
-	router := &Router{
+func newGroup(group string) *Mux {
+	m := &Mux{
 		prefixes: make(map[string]*Prefix),
-		groups: make(map[string]*Router),
+		groups: make(map[string]*Mux),
 		group:group,
 	}
-	return router
+	return m
 }
-func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
 			http.Error(w,fmt.Sprint(err),http.StatusBadRequest)
 		}
 	}()
-	router.mut.RLock()
-	defer router.mut.RUnlock()
-	if router.serve(w,r){
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	if m.serve(w,r){
 		return
 	}else {
-		for _,groupRouter:=range router.groups{
-			if groupRouter.serve(w,r){
+		for _,groupMux:=range m.groups{
+			if groupMux.serve(w,r){
 				return
 			}
 		}
 	}
-	if router.notFound!=nil{
-		router.notFound(w,r)
+	if m.notFound!=nil{
+		m.notFound(w,r)
 		return
 	}
 	http.Error(w, "404 Not Found : "+r.URL.String(), http.StatusNotFound)
 }
-func (router *Router) serve(w http.ResponseWriter, r *http.Request)bool {
-	path:=router.replace(r.URL.Path)
-	if entry:=router.getHandlerFunc(path);entry!=nil{
+func (m *Mux) serve(w http.ResponseWriter, r *http.Request)bool {
+	path:=m.replace(r.URL.Path)
+	if entry:=m.getHandlerFunc(path);entry!=nil{
 		if r.Method=="GET"&&entry.get!=nil{
-			router.serveEntry(entry.get,w,r)
+			m.serveEntry(entry.get,w,r)
 			return true
 		}else if r.Method=="POST"&&entry.post!=nil{
-			router.serveEntry(entry.post,w,r)
+			m.serveEntry(entry.post,w,r)
 			return true
 		}else if r.Method=="PUT"&&entry.put!=nil{
-			router.serveEntry(entry.put,w,r)
+			m.serveEntry(entry.put,w,r)
 			return true
 		}else if r.Method=="DELETE"&&entry.delete!=nil{
-			router.serveEntry(entry.delete,w,r)
+			m.serveEntry(entry.delete,w,r)
 			return true
 		}else if r.Method=="PATCH"&&entry.patch!=nil{
-			router.serveEntry(entry.patch,w,r)
+			m.serveEntry(entry.patch,w,r)
 			return true
 		}else if r.Method=="HEAD"&&entry.head!=nil{
-			router.serveEntry(entry.head,w,r)
+			m.serveEntry(entry.head,w,r)
 			return true
 		}else if r.Method=="OPTIONS"&&entry.options!=nil{
-			router.serveEntry(entry.options,w,r)
+			m.serveEntry(entry.options,w,r)
 			return true
 		}else if r.Method=="TRACE"&&entry.trace!=nil{
-			router.serveEntry(entry.trace,w,r)
+			m.serveEntry(entry.trace,w,r)
 			return true
 		}else if r.Method=="CONNECT"&&entry.connect!=nil{
-			router.serveEntry(entry.connect,w,r)
+			m.serveEntry(entry.connect,w,r)
 			return true
 		}else if entry.isEmpty()&&entry.handler!=nil{
-			router.serveEntry(entry.handler,w,r)
+			m.serveEntry(entry.handler,w,r)
 			return true
 		}
 	}
 	return false
 }
-func (router *Router) serveEntry(handler http.HandlerFunc,w http.ResponseWriter, r *http.Request) {
-	router.middleware(w,r)
+func (m *Mux) serveEntry(handler http.HandlerFunc,w http.ResponseWriter, r *http.Request) {
+	m.middleware(w,r)
 	handler(w,r)
 }
-func (router *Router) getHandlerFunc(path string) *Entry{
-	if prefix,key,ok:=router.matchParams(path);ok {
-		if entry, ok := router.prefixes[prefix].m[key]; ok {
+func (m *Mux) getHandlerFunc(path string) *Entry{
+	if prefix,key,ok:=m.matchParams(path);ok {
+		if entry, ok := m.prefixes[prefix].m[key]; ok {
 			return entry
 		}
 	}
 	return nil
 }
 
-func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entry{
-	router.mut.RLock()
-	defer router.mut.RUnlock()
-	pattern=router.replace(pattern)
-	prefix,key,match,params:=router.parseParams(router.group+pattern)
-	if v, ok := router.prefixes[prefix]; ok {
+func (m *Mux) HandleFunc(pattern string, handler http.HandlerFunc) *Entry{
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	pattern=m.replace(pattern)
+	prefix,key,match,params:=m.parseParams(m.group+pattern)
+	if v, ok := m.prefixes[prefix]; ok {
 		if entry, ok := v.m[key]; ok {
 			entry.handler=handler
 			entry.key=key
 			entry.match=match
 			entry.params=params
-			router.prefixes[prefix].m[key] = entry
+			m.prefixes[prefix].m[key] = entry
 			return entry
 		}else {
 			entry:=&Entry{}
@@ -155,61 +155,61 @@ func (router *Router) HandleFunc(pattern string, handler http.HandlerFunc) *Entr
 			entry.key=key
 			entry.match=match
 			entry.params=params
-			router.prefixes[prefix].m[key] = entry
+			m.prefixes[prefix].m[key] = entry
 			return entry
 		}
 	}else {
-		router.prefixes[prefix]=&Prefix{m:make(map[string]*Entry),prefix:prefix}
+		m.prefixes[prefix]=&Prefix{m:make(map[string]*Entry),prefix:prefix}
 		entry:=&Entry{}
 		entry.handler=handler
 		entry.key=key
 		entry.match=match
 		entry.params=params
-		router.prefixes[prefix].m[key] = entry
+		m.prefixes[prefix].m[key] = entry
 		return entry
 	}
 }
 
-func (router *Router) Group(group string,f func(router *Router)){
-	router.mut.RLock()
-	defer router.mut.RUnlock()
-	group=router.replace(group)
-	groupRouter:=newGroup(group)
-	f(groupRouter)
-	for _,p:=range groupRouter.prefixes{
+func (m *Mux) Group(group string,f func(m *Mux)){
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	group=m.replace(group)
+	groupMux:=newGroup(group)
+	f(groupMux)
+	for _,p:=range groupMux.prefixes{
 		for _,v:=range p.m{
 			v.FIN()
 		}
 	}
-	if _,ok:=router.groups[group];ok{
+	if _,ok:=m.groups[group];ok{
 		panic("Group Existed")
 	}
-	groupRouter.middlewares=router.middlewares
-	router.groups[group]=groupRouter
+	groupMux.middlewares=m.middlewares
+	m.groups[group]=groupMux
 }
-func (router *Router) NotFound(handler http.HandlerFunc){
-	router.mut.RLock()
-	defer router.mut.RUnlock()
-	router.notFound=handler
+func (m *Mux) NotFound(handler http.HandlerFunc){
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	m.notFound=handler
 }
-func (router *Router) Use(handler http.HandlerFunc){
-	router.mut.RLock()
-	defer router.mut.RUnlock()
-	router.middlewares=append(router.middlewares,handler)
+func (m *Mux) Use(handler http.HandlerFunc){
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	m.middlewares=append(m.middlewares,handler)
 }
-func (router *Router) middleware(w http.ResponseWriter, r *http.Request){
-	for _,handler:=range router.middlewares{
+func (m *Mux) middleware(w http.ResponseWriter, r *http.Request){
+	for _,handler:=range m.middlewares{
 		handler(w,r)
 	}
 }
 
-func (router *Router) Params(r *http.Request)(map[string]string){
-	router.mut.RLock()
-	defer router.mut.RUnlock()
+func (m *Mux) Params(r *http.Request)(map[string]string){
+	m.mut.RLock()
+	defer m.mut.RUnlock()
 	params:=make(map[string]string)
-	path:=router.replace(r.URL.Path)
-	if prefix,key,ok:=router.matchParams(path);ok{
-		if entry,ok:=router.prefixes[prefix].m[key];ok{
+	path:=m.replace(r.URL.Path)
+	if prefix,key,ok:=m.matchParams(path);ok{
+		if entry,ok:=m.prefixes[prefix].m[key];ok{
 			strs := strings.Split(strings.Trim(path,prefix), "/")
 			if len(strs)==len(entry.match){
 				for i:=0;i<len(strs);i++{
@@ -222,8 +222,8 @@ func (router *Router) Params(r *http.Request)(map[string]string){
 	}
 	return params
 }
-func (router *Router) matchParams(path string)(string,string,bool){
-	for _,p:=range router.prefixes{
+func (m *Mux) matchParams(path string)(string,string,bool){
+	for _,p:=range m.prefixes{
 		if strings.HasPrefix(path,p.prefix){
 			for _,v:=range p.m{
 				r:=strings.TrimLeft(path,p.prefix)
@@ -255,7 +255,7 @@ func (router *Router) matchParams(path string)(string,string,bool){
 	}
 	return "","",false
 }
-func (router *Router) parseParams(pattern string)(string,string,[]string,map[string]string){
+func (m *Mux) parseParams(pattern string)(string,string,[]string,map[string]string){
 	prefix:=""
 	var match []string
 	key:=""
@@ -285,19 +285,19 @@ func (router *Router) parseParams(pattern string)(string,string,[]string,map[str
 	}
 	return prefix,key,match,params
 }
-func (router *Router) Once(){
-	router.mut.RLock()
-	defer router.mut.RUnlock()
-	for _,p:=range router.prefixes{
+func (m *Mux) Once(){
+	m.mut.RLock()
+	defer m.mut.RUnlock()
+	for _,p:=range m.prefixes{
 		for _,v:=range p.m{
 			v.FIN()
 		}
 	}
-	for _,groupRouter:=range router.groups{
-		groupRouter.Once()
+	for _,groupMux:=range m.groups{
+		groupMux.Once()
 	}
 }
-func (router *Router) replace(s string) string {
+func (m *Mux) replace(s string) string {
 	for strings.Contains(s,"//"){
 		s=strings.ReplaceAll(s,"//","/")
 	}
