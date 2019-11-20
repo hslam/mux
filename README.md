@@ -26,9 +26,9 @@ import "hslam.com/git/x/mux"
 package main
 import (
 	"log"
+	"fmt"
 	"net/http"
 	"hslam.com/git/x/mux"
-	"fmt"
 )
 func main() {
 	router := mux.New()
@@ -44,7 +44,7 @@ func main() {
 	router.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
 		params:=router.Params(r)
 		w.Write([]byte(fmt.Sprintf("hello key:%s value:%s\n",params["key"], params["value"])))
-	}).GET().POST().PUT().DELETE().End()
+	}).GET().POST().PUT().DELETE()
 	router.Group("/group", func(router *mux.Router) {
 		router.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
@@ -55,7 +55,6 @@ func main() {
 			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n",params["id"])))
 		}).GET()
 	})
-	router.Once()//before listening
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```

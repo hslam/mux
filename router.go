@@ -20,7 +20,7 @@ const (
 
 type Router struct {
 	mut    		sync.RWMutex
-	prefixes  		map[string]*Prefix
+	prefixes	map[string]*Prefix
 	middlewares []http.HandlerFunc
 	notFound 	http.HandlerFunc
 	groups 		map[string]*Router
@@ -116,7 +116,7 @@ func (router *Router) serve(w http.ResponseWriter, r *http.Request)bool {
 		}else if r.Method=="CONNECT"&&entry.connect!=nil{
 			router.serveEntry(entry.connect,w,r)
 			return true
-		}else if entry.handler!=nil{
+		}else if entry.isEmpty()&&entry.handler!=nil{
 			router.serveEntry(entry.handler,w,r)
 			return true
 		}
@@ -178,7 +178,7 @@ func (router *Router) Group(group string,f func(router *Router)){
 	f(groupRouter)
 	for _,p:=range groupRouter.prefixes{
 		for _,v:=range p.m{
-			v.End()
+			v.FIN()
 		}
 	}
 	if _,ok:=router.groups[group];ok{
@@ -290,7 +290,7 @@ func (router *Router) Once(){
 	defer router.mut.RUnlock()
 	for _,p:=range router.prefixes{
 		for _,v:=range p.m{
-			v.End()
+			v.FIN()
 		}
 	}
 	for _,groupRouter:=range router.groups{
@@ -339,7 +339,7 @@ func (entry *Entry) CONNECT() *Entry{
 	entry.connect=entry.handler
 	return entry
 }
-func (entry *Entry) End(){
+func (entry *Entry) FIN(){
 	entry.handler=nil
 }
 func (entry *Entry) All() {
@@ -352,6 +352,20 @@ func (entry *Entry) All() {
 	entry.DELETE()
 	entry.TRACE()
 	entry.CONNECT()
-	entry.End()
+	entry.FIN()
+}
+func (entry *Entry) isEmpty()bool{
+	if entry.get==nil&&
+		entry.post==nil&&
+			entry.head==nil&&
+				entry.options==nil&&
+					entry.put==nil&&
+						entry.patch==nil&&
+							entry.delete==nil&&
+								entry.trace==nil&&
+									entry.connect==nil{
+		return true
+	}
+	return false
 }
 
