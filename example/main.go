@@ -3,10 +3,10 @@ import (
 	"log"
 	"fmt"
 	"net/http"
-	"hslam.com/git/x/rum"
+	"hslam.com/git/x/mux"
 )
 func main() {
-	router := rum.New()
+	router := mux.New()
 	router.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
 	})
@@ -20,7 +20,7 @@ func main() {
 		params:=router.Params(r)
 		w.Write([]byte(fmt.Sprintf("hello key:%s value:%s\n",params["key"], params["value"])))
 	}).GET().POST().PUT().DELETE().End()
-	router.Group("/group", func(router *rum.Router) {
+	router.Group("/group", func(router *mux.Router) {
 		router.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
 			params:=router.Params(r)
 			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n",params["id"])))

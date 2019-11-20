@@ -1,4 +1,4 @@
-package rum
+package mux
 
 import (
 	"testing"
