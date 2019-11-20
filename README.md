@@ -70,10 +70,6 @@ curl -XPOST http://localhost:8080/hello
 hello world Method:POST
 ```
 
-curl --HEAD http://localhost:8080/hello
-
-or
-
 curl -I http://localhost:8080/hello
 ```
 HTTP/1.1 200 OK
