@@ -3,7 +3,7 @@ import (
 	"log"
 	"fmt"
 	"net/http"
-	"hslam.com/git/x/mux"
+	"github.com/hslam/mux"
 )
 func main() {
 	m := mux.New()

@@ -8,17 +8,17 @@ An implementation of url path router written in Golang.
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found
-* [Mux Handler](https://hslam.com/git/x/handler "handler")
+* [Mux Handler](https://github.com/hslam/handler "handler")
 
 ## Get started
 
 ### Install
 ```
-go get hslam.com/git/x/mux
+go get github.com/hslam/mux
 ```
 ### Import
 ```
-import "hslam.com/git/x/mux"
+import "github.com/hslam/mux"
 ```
 ### Usage
 #### Example
@@ -28,7 +28,7 @@ import (
 	"log"
 	"fmt"
 	"net/http"
-	"hslam.com/git/x/mux"
+	"github.com/hslam/mux"
 )
 func main() {
 	m := mux.New()
