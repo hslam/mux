@@ -101,10 +101,10 @@ group/bar id:123
 ```
 
 ### Licence
-This package is licenced under a MIT licence (Copyright (c) 2019 Mort Huang)
+This package is licenced under a MIT licence (Copyright (c) 2019 Meng Huang)
 
 
 ### Authors
-mux was written by Mort Huang.
+mux was written by Meng Huang.
 
 
