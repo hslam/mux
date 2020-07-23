@@ -39,6 +39,15 @@ type Entry struct {
 	match   []string
 	params  map[string]string
 	method  int
+	get     http.HandlerFunc
+	post    http.HandlerFunc
+	put     http.HandlerFunc
+	delete  http.HandlerFunc
+	patch   http.HandlerFunc
+	head    http.HandlerFunc
+	options http.HandlerFunc
+	trace   http.HandlerFunc
+	connect http.HandlerFunc
 }
 
 func New() *Mux {
@@ -85,17 +94,35 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (m *Mux) serveHTTP(w http.ResponseWriter, r *http.Request) bool {
 	path := m.replace(r.URL.Path)
 	if entry := m.getHandlerFunc(path); entry != nil {
-		if entry.method == 0 ||
-			r.Method == "GET" && entry.method&GET > 0 ||
-			r.Method == "POST" && entry.method&POST > 0 ||
-			r.Method == "PUT" && entry.method&PUT > 0 ||
-			r.Method == "DELETE" && entry.method&DELETE > 0 ||
-			r.Method == "PATCH" && entry.method&PATCH > 0 ||
-			r.Method == "HEAD" && entry.method&HEAD > 0 ||
-			r.Method == "OPTIONS" && entry.method&OPTIONS > 0 ||
-			r.Method == "TRACE" && entry.method&TRACE > 0 ||
-			r.Method == "CONNECT" && entry.method&CONNECT > 0 {
+		if entry.method == 0 {
 			m.serveEntry(entry.handler, w, r)
+			return true
+		} else if r.Method == "GET" && entry.method&GET > 0 {
+			m.serveEntry(entry.get, w, r)
+			return true
+		} else if r.Method == "POST" && entry.method&POST > 0 {
+			m.serveEntry(entry.post, w, r)
+			return true
+		} else if r.Method == "PUT" && entry.method&PUT > 0 {
+			m.serveEntry(entry.put, w, r)
+			return true
+		} else if r.Method == "DELETE" && entry.method&DELETE > 0 {
+			m.serveEntry(entry.delete, w, r)
+			return true
+		} else if r.Method == "PATCH" && entry.method&PATCH > 0 {
+			m.serveEntry(entry.patch, w, r)
+			return true
+		} else if r.Method == "HEAD" && entry.method&HEAD > 0 {
+			m.serveEntry(entry.head, w, r)
+			return true
+		} else if r.Method == "OPTIONS" && entry.method&OPTIONS > 0 {
+			m.serveEntry(entry.options, w, r)
+			return true
+		} else if r.Method == "TRACE" && entry.method&TRACE > 0 {
+			m.serveEntry(entry.trace, w, r)
+			return true
+		} else if r.Method == "CONNECT" && entry.method&CONNECT > 0 {
+			m.serveEntry(entry.connect, w, r)
 			return true
 		}
 	}
@@ -275,46 +302,55 @@ func (m *Mux) replace(s string) string {
 
 func (entry *Entry) GET() *Entry {
 	entry.method |= GET
+	entry.get = entry.handler
 	return entry
 }
 
 func (entry *Entry) POST() *Entry {
 	entry.method |= POST
+	entry.post = entry.handler
 	return entry
 }
 
 func (entry *Entry) PUT() *Entry {
 	entry.method |= PUT
+	entry.put = entry.handler
 	return entry
 }
 
 func (entry *Entry) DELETE() *Entry {
 	entry.method |= DELETE
+	entry.delete = entry.handler
 	return entry
 }
 
 func (entry *Entry) PATCH() *Entry {
 	entry.method |= PATCH
+	entry.patch = entry.handler
 	return entry
 }
 
 func (entry *Entry) HEAD() *Entry {
 	entry.method |= HEAD
+	entry.head = entry.handler
 	return entry
 }
 
 func (entry *Entry) OPTIONS() *Entry {
 	entry.method |= OPTIONS
+	entry.options = entry.handler
 	return entry
 }
 
 func (entry *Entry) TRACE() *Entry {
 	entry.method |= TRACE
+	entry.trace = entry.handler
 	return entry
 }
 
 func (entry *Entry) CONNECT() *Entry {
 	entry.method |= CONNECT
+	entry.connect = entry.handler
 	return entry
 }
 
