@@ -1,5 +1,6 @@
 # mux
 [![GoDoc](https://godoc.org/github.com/hslam/mux?status.svg)](https://godoc.org/github.com/hslam/mux)
+[![Build Status](https://travis-ci.org/hslam/mux.svg?branch=master)](https://travis-ci.org/hslam/mux)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hslam/mux?v=7e100)](https://goreportcard.com/report/github.com/hslam/mux)
 [![LICENSE](https://img.shields.io/github/license/hslam/mux.svg?style=flat-square)](https://github.com/hslam/mux/blob/master/LICENSE)
 
