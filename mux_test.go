@@ -3,6 +3,7 @@ package mux
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -72,7 +73,8 @@ func TestMux(t *testing.T) {
 		Addr:    addr,
 		Handler: m,
 	}
-	go httpServer.ListenAndServe()
+	l, _ := net.Listen("tcp", addr)
+	go httpServer.Serve(l)
 	if resp, err := http.Get("http://" + addr + "/hello"); err != nil {
 		t.Error(err)
 	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
