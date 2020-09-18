@@ -66,6 +66,11 @@ func main() {
 }
 ```
 
+curl -XGET http://localhost:8080/favicon.ico
+```
+Not Found : /favicon.ico
+```
+
 curl -XGET http://localhost:8080/hello
 ```
 hello world Method:GET

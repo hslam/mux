@@ -5,6 +5,7 @@
 package mux
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -22,6 +23,12 @@ const (
 	connect
 	patch
 )
+
+// ErrGroupExisted is the error returned by Group when registers a existed group.
+var ErrGroupExisted = errors.New("Group Existed")
+
+// ErrParamsKeyEmpty is the error returned by HandleFunc when the params key is empty.
+var ErrParamsKeyEmpty = errors.New("Params key must be not empty")
 
 // Mux is an HTTP request multiplexer.
 type Mux struct {
@@ -194,7 +201,7 @@ func (m *Mux) Group(group string, f func(m *Mux)) {
 	groupMux := newGroup(group)
 	f(groupMux)
 	if _, ok := m.groups[group]; ok {
-		panic("Group Existed")
+		panic(ErrGroupExisted)
 	}
 	groupMux.middlewares = m.middlewares
 	m.groups[group] = groupMux
@@ -227,8 +234,9 @@ func (m *Mux) Params(r *http.Request) map[string]string {
 	params := make(map[string]string)
 	path := m.replace(r.URL.Path)
 	if prefix, key, ok := m.matchParams(path); ok {
-		if entry, ok := m.prefixes[prefix].m[key]; ok {
-			strs := strings.Split(strings.Trim(path, prefix), "/")
+		if entry, ok := m.prefixes[prefix].m[key]; ok &&
+			len(entry.match) > 0 && len(path) > len(prefix) {
+			strs := strings.Split(strings.TrimLeft(path, prefix), "/")
 			if len(strs) == len(entry.match) {
 				for i := 0; i < len(strs); i++ {
 					if entry.match[i] != "" {
@@ -258,11 +266,7 @@ func (m *Mux) matchParams(path string) (string, string, bool) {
 								key += "/"
 							}
 						} else {
-							if i > 0 {
-								key += "/" + form[i]
-							} else {
-								key += form[i]
-							}
+							key += "/" + form[i]
 						}
 					}
 					if key == v.key {
@@ -283,6 +287,9 @@ func (m *Mux) parseParams(pattern string) (string, string, []string, map[string]
 	if strings.Contains(pattern, ":") {
 		idx := strings.Index(pattern, ":")
 		prefix = pattern[:idx]
+		if idx+1 == len(pattern) || strings.Contains(pattern, ":/") {
+			panic(ErrParamsKeyEmpty)
+		}
 		match = strings.Split(pattern[idx:], "/")
 		for i := 0; i < len(match); i++ {
 			if strings.Contains(match[i], ":") {
@@ -292,11 +299,7 @@ func (m *Mux) parseParams(pattern string) (string, string, []string, map[string]
 					key += "/"
 				}
 			} else {
-				if i > 0 {
-					key += "/" + match[i]
-				} else {
-					key += match[i]
-				}
+				key += "/" + match[i]
 				match[i] = ""
 			}
 		}

@@ -44,6 +44,20 @@ func TestParseMatch(t *testing.T) {
 	}
 }
 
+func testHTTP(method, url string, status int, result string, t *testing.T) {
+	var req *http.Request
+	req, _ = http.NewRequest(method, url, nil)
+	if resp, err := http.DefaultClient.Do(req); err != nil {
+		t.Error(err)
+	} else if resp.StatusCode != status {
+		t.Error(resp.StatusCode)
+	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		t.Error(err)
+	} else if string(body) != result {
+		t.Error(string(body))
+	}
+}
+
 func TestMux(t *testing.T) {
 	m := New()
 	m.NotFound(func(w http.ResponseWriter, r *http.Request) {
@@ -75,45 +89,145 @@ func TestMux(t *testing.T) {
 	}
 	l, _ := net.Listen("tcp", addr)
 	go httpServer.Serve(l)
-	if resp, err := http.Get("http://" + addr + "/hello"); err != nil {
-		t.Error(err)
-	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		t.Error(err)
-	} else if string(body) != "hello world Method:GET\n" {
-		t.Error(string(body))
-	}
-	if resp, err := http.Post("http://"+addr+"/hello", "", nil); err != nil {
-		t.Error(err)
-	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		t.Error(err)
-	} else if string(body) != "hello world Method:POST\n" {
-		t.Error(string(body))
-	}
+	testHTTP("GET", "http://"+addr+"/favicon.ico", http.StatusNotFound, "Not Found : /favicon.ico\n", t)
+	testHTTP("GET", "http://"+addr+"/hello", http.StatusOK, "hello world Method:GET\n", t)
+	testHTTP("POST", "http://"+addr+"/hello", http.StatusOK, "hello world Method:POST\n", t)
+	testHTTP("PUT", "http://"+addr+"/hello", http.StatusOK, "hello world Method:PUT\n", t)
+	testHTTP("DELETE", "http://"+addr+"/hello", http.StatusOK, "hello world Method:DELETE\n", t)
+	testHTTP("PATCH", "http://"+addr+"/hello", http.StatusOK, "hello world Method:PATCH\n", t)
+	testHTTP("OPTIONS", "http://"+addr+"/hello", http.StatusOK, "hello world Method:OPTIONS\n", t)
+	testHTTP("TRACE", "http://"+addr+"/hello", http.StatusOK, "hello world Method:TRACE\n", t)
+	testHTTP("CONNECT", "http://"+addr+"/hello", http.StatusOK, "hello world Method:CONNECT\n", t)
 	if resp, err := http.Head("http://" + addr + "/hello"); err != nil {
 		t.Error(err)
-	} else if resp.StatusCode != 200 {
-		t.Error(resp.ContentLength)
+	} else if resp.StatusCode != http.StatusOK {
+		t.Error(resp.StatusCode)
 	}
-	if resp, err := http.Get("http://" + addr + "/hello/123/world/456"); err != nil {
-		t.Error(err)
-	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		t.Error(err)
-	} else if string(body) != "hello key:123 value:456\n" {
-		t.Error(string(body))
-	}
-	if resp, err := http.Get("http://" + addr + "/group/foo/1"); err != nil {
-		t.Error(err)
-	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		t.Error(err)
-	} else if string(body) != "group/foo id:1\n" {
-		t.Error(string(body))
-	}
-	if resp, err := http.Get("http://" + addr + "/group/bar/2"); err != nil {
-		t.Error(err)
-	} else if body, err := ioutil.ReadAll(resp.Body); err != nil {
-		t.Error(err)
-	} else if string(body) != "group/bar id:2\n" {
-		t.Error(string(body))
-	}
+	testHTTP("GET", "http://"+addr+"/hello/123/world/456", http.StatusOK, "hello key:123 value:456\n", t)
+	testHTTP("GET", "http://"+addr+"/group/foo/1", http.StatusOK, "group/foo id:1\n", t)
+	testHTTP("GET", "http://"+addr+"/group/bar/2", http.StatusOK, "group/bar id:2\n", t)
 	httpServer.Close()
+}
+
+func TestDefaultNotFound(t *testing.T) {
+	m := New()
+	addr := ":8080"
+	httpServer := &http.Server{
+		Addr:    addr,
+		Handler: m,
+	}
+	l, _ := net.Listen("tcp", addr)
+	go httpServer.Serve(l)
+	testHTTP("GET", "http://"+addr+"/favicon.ico", http.StatusNotFound, "404 Not Found : /favicon.ico\n", t)
+	httpServer.Close()
+}
+
+func TestHandleFunc(t *testing.T) {
+	m := New()
+	m.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello world Method:GET\n"))
+	}).GET()
+	m.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello world Method:POST\n"))
+	}).POST()
+	m.HandleFunc("/hello/:key", func(w http.ResponseWriter, r *http.Request) {
+		params := m.Params(r)
+		w.Write([]byte(fmt.Sprintf("hello key:%s\n", params["key"])))
+	}).GET()
+	m.HandleFunc("/hello/:key/:value", func(w http.ResponseWriter, r *http.Request) {
+		params := m.Params(r)
+		w.Write([]byte(fmt.Sprintf("hello key:%s value:%s\n", params["key"], params["value"])))
+	}).GET()
+	m.HandleFunc("/hello/:key/world/:value", func(w http.ResponseWriter, r *http.Request) {
+		params := m.Params(r)
+		w.Write([]byte(fmt.Sprintf("hello world key:%s value:%s\n", params["key"], params["value"])))
+	}).GET()
+	m.HandleFunc("/hello/:key/world/:value/mux", func(w http.ResponseWriter, r *http.Request) {
+		params := m.Params(r)
+		w.Write([]byte(fmt.Sprintf("hello world mux key:%s value:%s\n", params["key"], params["value"])))
+	}).GET()
+	addr := ":8080"
+	httpServer := &http.Server{
+		Addr:    addr,
+		Handler: m,
+	}
+	l, _ := net.Listen("tcp", addr)
+	go httpServer.Serve(l)
+	testHTTP("GET", "http://"+addr+"/hello", http.StatusOK, "hello world Method:GET\n", t)
+	testHTTP("POST", "http://"+addr+"/hello", http.StatusOK, "hello world Method:POST\n", t)
+	testHTTP("GET", "http://"+addr+"/hello/123", http.StatusOK, "hello key:123\n", t)
+	testHTTP("GET", "http://"+addr+"/hello/123/456", http.StatusOK, "hello key:123 value:456\n", t)
+	testHTTP("GET", "http://"+addr+"/hello/123/world/456", http.StatusOK, "hello world key:123 value:456\n", t)
+	testHTTP("GET", "http://"+addr+"/hello/123/world/456/mux", http.StatusOK, "hello world mux key:123 value:456\n", t)
+	httpServer.Close()
+}
+
+func TestServeHTTP(t *testing.T) {
+	m := New()
+	m.HandleFunc("//hello", func(w http.ResponseWriter, r *http.Request) {
+		panic("hello")
+	})
+	addr := ":8080"
+	httpServer := &http.Server{
+		Addr:    addr,
+		Handler: m,
+	}
+	l, _ := net.Listen("tcp", addr)
+	go httpServer.Serve(l)
+	testHTTP("GET", "http://"+addr+"/hello", http.StatusBadRequest, "hello\n", t)
+	testHTTP("GET", "http://"+addr+"/hello", http.StatusBadRequest, "hello\n", t)
+	httpServer.Close()
+}
+
+func TestGroup(t *testing.T) {
+	m := New()
+	m.Group("/group", func(m *Mux) {
+		m.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
+			params := m.Params(r)
+			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n", params["id"])))
+		}).GET()
+		m.HandleFunc("/bar/:id", func(w http.ResponseWriter, r *http.Request) {
+			params := m.Params(r)
+			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n", params["id"])))
+		}).GET()
+	})
+	defer func() {
+		if err := recover(); err != nil {
+			if err != ErrGroupExisted {
+				t.Error(err)
+			}
+		}
+	}()
+	m.Group("/group", func(m *Mux) {})
+}
+
+func TestParseParams(t *testing.T) {
+	func() {
+		m := New()
+		defer func() {
+			if err := recover(); err != nil {
+				if err != ErrParamsKeyEmpty {
+					t.Error(err)
+				}
+			}
+		}()
+		m.HandleFunc("/:", func(w http.ResponseWriter, r *http.Request) {
+			params := m.Params(r)
+			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n", params["id"])))
+		}).GET()
+	}()
+	func() {
+		m := New()
+		defer func() {
+			if err := recover(); err != nil {
+				if err != ErrParamsKeyEmpty {
+					t.Error(err)
+				}
+			}
+		}()
+		m.HandleFunc("/:/", func(w http.ResponseWriter, r *http.Request) {
+			params := m.Params(r)
+			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n", params["id"])))
+		}).GET()
+	}()
 }
