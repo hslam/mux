@@ -1,5 +1,9 @@
 # mux
-An implementation of url path router written in Golang.
+[![GoDoc](https://godoc.org/github.com/hslam/mux?status.svg)](https://godoc.org/github.com/hslam/mux)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hslam/mux?v=7e100)](https://goreportcard.com/report/github.com/hslam/mux)
+[![LICENSE](https://img.shields.io/github/license/hslam/mux.svg?style=flat-square)](https://github.com/hslam/mux/blob/master/LICENSE)
+
+Package mux implements an HTTP request multiplexer.
 
 ## Features
 
@@ -24,35 +28,37 @@ import "github.com/hslam/mux"
 #### Example
 ```
 package main
+
 import (
-	"log"
 	"fmt"
-	"net/http"
 	"github.com/hslam/mux"
+	"log"
+	"net/http"
 )
+
 func main() {
 	m := mux.New()
 	m.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
 	})
 	m.Use(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("Host:%s Path:%s Method:%s\n",r.Host,r.URL.Path,r.Method)
+		fmt.Printf("Host:%s Path:%s Method:%s\n", r.Host, r.URL.Path, r.Method)
 	})
 	m.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fmt.Sprintf("hello world Method:%s\n",r.Method)))
+		w.Write([]byte(fmt.Sprintf("hello world Method:%s\n", r.Method)))
 	}).All()
-	m.HandleFunc("/hello/:key/mort/:value/huang", func(w http.ResponseWriter, r *http.Request) {
-		params:=m.Params(r)
-		w.Write([]byte(fmt.Sprintf("hello key:%s value:%s\n",params["key"], params["value"])))
+	m.HandleFunc("/hello/:key/world/:value", func(w http.ResponseWriter, r *http.Request) {
+		params := m.Params(r)
+		w.Write([]byte(fmt.Sprintf("hello key:%s value:%s\n", params["key"], params["value"])))
 	}).GET().POST().PUT().DELETE()
 	m.Group("/group", func(m *mux.Mux) {
 		m.HandleFunc("/foo/:id", func(w http.ResponseWriter, r *http.Request) {
-			params:=m.Params(r)
-			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n",params["id"])))
+			params := m.Params(r)
+			w.Write([]byte(fmt.Sprintf("group/foo id:%s\n", params["id"])))
 		}).GET()
 		m.HandleFunc("/bar/:id", func(w http.ResponseWriter, r *http.Request) {
-			params:=m.Params(r)
-			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n",params["id"])))
+			params := m.Params(r)
+			w.Write([]byte(fmt.Sprintf("group/bar id:%s\n", params["id"])))
 		}).GET()
 	})
 	log.Fatal(http.ListenAndServe(":8080", m))
@@ -87,21 +93,21 @@ curl -XOPTIONS http://localhost:8080/hello
 hello world Method:OPTIONS
 ```
 
-curl http://localhost:8080/hello/123/mort/456/huang
+curl http://localhost:8080/hello/123/world/456
 ```
 hello key:123 value:456
 ```
-curl http://localhost:8080/group/foo/123
+curl http://localhost:8080/group/foo/1
 ```
-group/foo id:123
+group/foo id:1
 ```
-curl http://localhost:8080/group/bar/123
+curl http://localhost:8080/group/bar/2
 ```
-group/bar id:123
+group/bar id:2
 ```
 
-### Licence
-This package is licenced under a MIT licence (Copyright (c) 2019 Meng Huang)
+### License
+This package is licensed under a MIT license (Copyright (c) 2019 Meng Huang)
 
 
 ### Authors

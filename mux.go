@@ -1,3 +1,7 @@
+// Copyright (c) 2020 Meng Huang (mhboy@outlook.com)
+// This package is licensed under a MIT license that can be found in the LICENSE file.
+
+// Package mux implements an HTTP request multiplexer.
 package mux
 
 import (
@@ -8,31 +12,33 @@ import (
 )
 
 const (
-	OPTIONS = 1 << iota
-	GET
-	HEAD
-	POST
-	PUT
-	DELETE
-	TRACE
-	CONNECT
-	PATCH
+	options = 1 << iota
+	get
+	head
+	post
+	put
+	delete
+	trace
+	connect
+	patch
 )
 
+// Mux is an HTTP request multiplexer.
 type Mux struct {
 	mut         sync.RWMutex
-	prefixes    map[string]*Prefix
+	prefixes    map[string]*prefix
 	middlewares []http.HandlerFunc
 	notFound    http.HandlerFunc
-	groups      map[string]*Mux
 	group       string
+	groups      map[string]*Mux
 }
 
-type Prefix struct {
-	m      map[string]*Entry
+type prefix struct {
 	prefix string
+	m      map[string]*Entry
 }
 
+// Entry represents an HTTP HandlerFunc entry.
 type Entry struct {
 	handler http.HandlerFunc
 	key     string
@@ -50,9 +56,10 @@ type Entry struct {
 	connect http.HandlerFunc
 }
 
+// New returns a new Mux.
 func New() *Mux {
 	m := &Mux{
-		prefixes: make(map[string]*Prefix),
+		prefixes: make(map[string]*prefix),
 		groups:   make(map[string]*Mux),
 	}
 	return m
@@ -60,13 +67,15 @@ func New() *Mux {
 
 func newGroup(group string) *Mux {
 	m := &Mux{
-		prefixes: make(map[string]*Prefix),
+		prefixes: make(map[string]*prefix),
 		groups:   make(map[string]*Mux),
 		group:    group,
 	}
 	return m
 }
 
+// ServeHTTP dispatches the request to the handler whose
+// pattern most closely matches the request URL.
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -77,11 +86,10 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer m.mut.RUnlock()
 	if m.serveHTTP(w, r) {
 		return
-	} else {
-		for _, groupMux := range m.groups {
-			if groupMux.serveHTTP(w, r) {
-				return
-			}
+	}
+	for _, groupMux := range m.groups {
+		if groupMux.serveHTTP(w, r) {
+			return
 		}
 	}
 	if m.notFound != nil {
@@ -97,31 +105,31 @@ func (m *Mux) serveHTTP(w http.ResponseWriter, r *http.Request) bool {
 		if entry.method == 0 {
 			m.serveEntry(entry.handler, w, r)
 			return true
-		} else if r.Method == "GET" && entry.method&GET > 0 {
+		} else if r.Method == "GET" && entry.method&get > 0 {
 			m.serveEntry(entry.get, w, r)
 			return true
-		} else if r.Method == "POST" && entry.method&POST > 0 {
+		} else if r.Method == "POST" && entry.method&post > 0 {
 			m.serveEntry(entry.post, w, r)
 			return true
-		} else if r.Method == "PUT" && entry.method&PUT > 0 {
+		} else if r.Method == "PUT" && entry.method&put > 0 {
 			m.serveEntry(entry.put, w, r)
 			return true
-		} else if r.Method == "DELETE" && entry.method&DELETE > 0 {
+		} else if r.Method == "DELETE" && entry.method&delete > 0 {
 			m.serveEntry(entry.delete, w, r)
 			return true
-		} else if r.Method == "PATCH" && entry.method&PATCH > 0 {
+		} else if r.Method == "PATCH" && entry.method&patch > 0 {
 			m.serveEntry(entry.patch, w, r)
 			return true
-		} else if r.Method == "HEAD" && entry.method&HEAD > 0 {
+		} else if r.Method == "HEAD" && entry.method&head > 0 {
 			m.serveEntry(entry.head, w, r)
 			return true
-		} else if r.Method == "OPTIONS" && entry.method&OPTIONS > 0 {
+		} else if r.Method == "OPTIONS" && entry.method&options > 0 {
 			m.serveEntry(entry.options, w, r)
 			return true
-		} else if r.Method == "TRACE" && entry.method&TRACE > 0 {
+		} else if r.Method == "TRACE" && entry.method&trace > 0 {
 			m.serveEntry(entry.trace, w, r)
 			return true
-		} else if r.Method == "CONNECT" && entry.method&CONNECT > 0 {
+		} else if r.Method == "CONNECT" && entry.method&connect > 0 {
 			m.serveEntry(entry.connect, w, r)
 			return true
 		}
@@ -143,40 +151,41 @@ func (m *Mux) getHandlerFunc(path string) *Entry {
 	return nil
 }
 
+// HandleFunc registers the handler function for the given pattern
+// in the Mux.
 func (m *Mux) HandleFunc(pattern string, handler http.HandlerFunc) *Entry {
 	m.mut.RLock()
 	defer m.mut.RUnlock()
 	pattern = m.replace(pattern)
-	prefix, key, match, params := m.parseParams(m.group + pattern)
-	if v, ok := m.prefixes[prefix]; ok {
+	pre, key, match, params := m.parseParams(m.group + pattern)
+	if v, ok := m.prefixes[pre]; ok {
 		if entry, ok := v.m[key]; ok {
 			entry.handler = handler
 			entry.key = key
 			entry.match = match
 			entry.params = params
-			m.prefixes[prefix].m[key] = entry
-			return entry
-		} else {
-			entry := &Entry{}
-			entry.handler = handler
-			entry.key = key
-			entry.match = match
-			entry.params = params
-			m.prefixes[prefix].m[key] = entry
+			m.prefixes[pre].m[key] = entry
 			return entry
 		}
-	} else {
-		m.prefixes[prefix] = &Prefix{m: make(map[string]*Entry), prefix: prefix}
 		entry := &Entry{}
 		entry.handler = handler
 		entry.key = key
 		entry.match = match
 		entry.params = params
-		m.prefixes[prefix].m[key] = entry
+		m.prefixes[pre].m[key] = entry
 		return entry
 	}
+	m.prefixes[pre] = &prefix{m: make(map[string]*Entry), prefix: pre}
+	entry := &Entry{}
+	entry.handler = handler
+	entry.key = key
+	entry.match = match
+	entry.params = params
+	m.prefixes[pre].m[key] = entry
+	return entry
 }
 
+// Group registers a group for the given pattern in the Mux.
 func (m *Mux) Group(group string, f func(m *Mux)) {
 	m.mut.RLock()
 	defer m.mut.RUnlock()
@@ -190,12 +199,14 @@ func (m *Mux) Group(group string, f func(m *Mux)) {
 	m.groups[group] = groupMux
 }
 
+// NotFound registers the not found handler function in the Mux.
 func (m *Mux) NotFound(handler http.HandlerFunc) {
 	m.mut.RLock()
 	defer m.mut.RUnlock()
 	m.notFound = handler
 }
 
+// Use uses middleware.
 func (m *Mux) Use(handler http.HandlerFunc) {
 	m.mut.RLock()
 	defer m.mut.RUnlock()
@@ -208,6 +219,7 @@ func (m *Mux) middleware(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Params returns http request params.
 func (m *Mux) Params(r *http.Request) map[string]string {
 	m.mut.RLock()
 	defer m.mut.RUnlock()
@@ -300,60 +312,70 @@ func (m *Mux) replace(s string) string {
 	return s
 }
 
+// GET adds a GET HTTP method for the entry.
 func (entry *Entry) GET() *Entry {
-	entry.method |= GET
+	entry.method |= get
 	entry.get = entry.handler
 	return entry
 }
 
+// POST adds a POST HTTP method for the entry.
 func (entry *Entry) POST() *Entry {
-	entry.method |= POST
+	entry.method |= post
 	entry.post = entry.handler
 	return entry
 }
 
+// PUT adds a PUT HTTP method for the entry.
 func (entry *Entry) PUT() *Entry {
-	entry.method |= PUT
+	entry.method |= put
 	entry.put = entry.handler
 	return entry
 }
 
+// DELETE adds a DELETE HTTP method for the entry.
 func (entry *Entry) DELETE() *Entry {
-	entry.method |= DELETE
+	entry.method |= delete
 	entry.delete = entry.handler
 	return entry
 }
 
+// PATCH adds a PATCH HTTP method for the entry.
 func (entry *Entry) PATCH() *Entry {
-	entry.method |= PATCH
+	entry.method |= patch
 	entry.patch = entry.handler
 	return entry
 }
 
+// HEAD adds a HEAD HTTP method for the entry.
 func (entry *Entry) HEAD() *Entry {
-	entry.method |= HEAD
+	entry.method |= head
 	entry.head = entry.handler
 	return entry
 }
 
+// OPTIONS adds a OPTIONS HTTP method for the entry.
 func (entry *Entry) OPTIONS() *Entry {
-	entry.method |= OPTIONS
+	entry.method |= options
 	entry.options = entry.handler
 	return entry
 }
 
+// TRACE adds a TRACE HTTP method for the entry.
 func (entry *Entry) TRACE() *Entry {
-	entry.method |= TRACE
+	entry.method |= trace
 	entry.trace = entry.handler
 	return entry
 }
 
+// CONNECT adds a CONNECT HTTP method for the entry.
 func (entry *Entry) CONNECT() *Entry {
-	entry.method |= CONNECT
+	entry.method |= connect
 	entry.connect = entry.handler
 	return entry
 }
 
+// All adds all HTTP method for the entry.
 func (entry *Entry) All() {
 	entry.GET()
 	entry.POST()
