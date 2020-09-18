@@ -57,6 +57,7 @@ type Entry struct {
 	put     http.HandlerFunc
 	delete  http.HandlerFunc
 	patch   http.HandlerFunc
+	head    http.HandlerFunc
 	options http.HandlerFunc
 	trace   http.HandlerFunc
 	connect http.HandlerFunc
@@ -127,7 +128,7 @@ func (m *Mux) serveHTTP(w http.ResponseWriter, r *http.Request) bool {
 			m.serveEntry(entry.patch, w, r)
 			return true
 		} else if r.Method == "HEAD" && entry.method&head > 0 {
-			m.serveEntry(nil, w, r)
+			m.serveEntry(entry.head, w, r)
 			return true
 		} else if r.Method == "OPTIONS" && entry.method&options > 0 {
 			m.serveEntry(entry.options, w, r)
@@ -354,6 +355,7 @@ func (entry *Entry) PATCH() *Entry {
 // HEAD adds a HEAD HTTP method for the entry.
 func (entry *Entry) HEAD() *Entry {
 	entry.method |= head
+	entry.head = entry.handler
 	return entry
 }
 

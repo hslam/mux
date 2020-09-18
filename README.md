@@ -86,6 +86,8 @@ curl -I http://localhost:8080/hello
 ```
 HTTP/1.1 200 OK
 Date: Tue, 01 Oct 2019 20:28:42 GMT
+Content-Length: 24
+Content-Type: text/plain; charset=utf-8
 ```
 
 curl -XPATCH http://localhost:8080/hello
