@@ -1,5 +1,5 @@
 # mux
-[![GoDoc](https://godoc.org/github.com/hslam/mux?status.svg)](https://godoc.org/github.com/hslam/mux)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/hslam/mux)](https://pkg.go.dev/github.com/hslam/mux)
 [![Build Status](https://travis-ci.org/hslam/mux.svg?branch=master)](https://travis-ci.org/hslam/mux)
 [![codecov](https://codecov.io/gh/hslam/mux/branch/master/graph/badge.svg)](https://codecov.io/gh/hslam/mux)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hslam/mux?v=7e100)](https://goreportcard.com/report/github.com/hslam/mux)
@@ -117,7 +117,7 @@ group/bar id:2
 This package is licensed under a MIT license (Copyright (c) 2019 Meng Huang)
 
 
-### Authors
+### Author
 mux was written by Meng Huang.
 
 
