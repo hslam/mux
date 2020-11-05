@@ -28,7 +28,7 @@ import "github.com/hslam/mux"
 ```
 ### Usage
 #### Example
-```
+```go
 package main
 
 import (
