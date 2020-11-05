@@ -14,7 +14,7 @@ Package mux implements an HTTP request multiplexer.
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found
-* [Mux Handler](https://github.com/hslam/handler "handler")
+* [HTTP Handler](https://github.com/hslam/handler "handler")
 
 ## Get started
 
