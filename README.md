@@ -27,6 +27,26 @@ go get github.com/hslam/mux
 import "github.com/hslam/mux"
 ```
 ### Usage
+
+#### Simple Example
+```go
+package main
+
+import (
+	"github.com/hslam/mux"
+	"log"
+	"net/http"
+)
+
+func main() {
+	m := mux.New()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello World"))
+	})
+	log.Fatal(http.ListenAndServe(":8080", m))
+}
+```
+
 #### Example
 ```go
 package main
