@@ -237,7 +237,7 @@ func (m *Mux) Params(r *http.Request) map[string]string {
 	if prefix, key, ok := m.matchParams(path); ok {
 		if entry, ok := m.prefixes[prefix].m[key]; ok &&
 			len(entry.match) > 0 && len(path) > len(prefix) {
-			strs := strings.Split(strings.TrimLeft(path, prefix), "/")
+			strs := strings.Split(path[len(prefix):], "/")
 			if len(strs) == len(entry.match) {
 				for i := 0; i < len(strs); i++ {
 					if entry.match[i] != "" {
@@ -254,7 +254,7 @@ func (m *Mux) matchParams(path string) (string, string, bool) {
 	for _, p := range m.prefixes {
 		if strings.HasPrefix(path, p.prefix) {
 			for _, v := range p.m {
-				r := strings.TrimLeft(path, p.prefix)
+				r := path[len(p.prefix):]
 				if r == "" {
 					return p.prefix, v.key, true
 				}
