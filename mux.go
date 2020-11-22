@@ -250,10 +250,10 @@ func (m *Mux) matchParams(path string) (string, string, bool) {
 	for _, p := range m.prefixes {
 		if strings.HasPrefix(path, p.prefix) {
 			r := path[len(p.prefix):]
+			if r == "" {
+				return p.prefix, "", true
+			}
 			for _, v := range p.m {
-				if r == "" {
-					return p.prefix, v.key, true
-				}
 				count := strings.Count(r, "/")
 				if count+1 == len(v.match) {
 					form := strings.Split(r, "/")
@@ -261,7 +261,9 @@ func (m *Mux) matchParams(path string) (string, string, bool) {
 					for i := 0; i < len(form); i++ {
 						if v.match[i] != "" {
 							if i > 0 {
-								key += "/"
+								key += "/:"
+							} else {
+								key += ":"
 							}
 						} else {
 							key += "/" + form[i]
@@ -294,7 +296,9 @@ func (m *Mux) parseParams(pattern string) (string, string, []string, map[string]
 				match[i] = strings.Trim(match[i], ":")
 				params[match[i]] = ""
 				if i > 0 {
-					key += "/"
+					key += "/:"
+				} else {
+					key += ":"
 				}
 			} else {
 				key += "/" + match[i]
