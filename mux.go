@@ -33,8 +33,8 @@ var ErrParamsKeyEmpty = errors.New("Params key must be not empty")
 type Mux struct {
 	mut         sync.RWMutex
 	prefixes    map[string]*prefix
-	middlewares []http.HandlerFunc
-	notFound    http.HandlerFunc
+	middlewares []http.Handler
+	notFound    http.Handler
 	group       string
 	groups      map[string]*Mux
 }
@@ -46,20 +46,20 @@ type prefix struct {
 
 // Entry represents an HTTP HandlerFunc entry.
 type Entry struct {
-	handler http.HandlerFunc
+	handler http.Handler
 	key     string
 	match   []string
 	params  map[string]string
 	method  int
-	get     http.HandlerFunc
-	post    http.HandlerFunc
-	put     http.HandlerFunc
-	delete  http.HandlerFunc
-	patch   http.HandlerFunc
-	head    http.HandlerFunc
-	options http.HandlerFunc
-	trace   http.HandlerFunc
-	connect http.HandlerFunc
+	get     http.Handler
+	post    http.Handler
+	put     http.Handler
+	delete  http.Handler
+	patch   http.Handler
+	head    http.Handler
+	options http.Handler
+	trace   http.Handler
+	connect http.Handler
 }
 
 // New returns a new Mux.
@@ -92,7 +92,7 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if m.notFound != nil {
-		m.notFound(w, r)
+		m.notFound.ServeHTTP(w, r)
 		return
 	}
 	http.Error(w, "404 Not Found : "+r.URL.String(), http.StatusNotFound)
@@ -134,10 +134,10 @@ func (m *Mux) serveEntry(entry *Entry, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (m *Mux) serveHandler(handler http.HandlerFunc, w http.ResponseWriter, r *http.Request) {
+func (m *Mux) serveHandler(handler http.Handler, w http.ResponseWriter, r *http.Request) {
 	m.middleware(w, r)
 	if handler != nil {
-		handler(w, r)
+		handler.ServeHTTP(w, r)
 	}
 }
 
@@ -152,7 +152,13 @@ func (m *Mux) getHandlerFunc(path string) *Entry {
 
 // HandleFunc registers the handler function for the given pattern
 // in the Mux.
-func (m *Mux) HandleFunc(pattern string, handler http.HandlerFunc) *Entry {
+func (m *Mux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) *Entry {
+	return m.Handle(pattern, http.HandlerFunc(handler))
+}
+
+// Handle registers the handler for the given pattern
+// in the Mux.
+func (m *Mux) Handle(pattern string, handler http.Handler) *Entry {
 	m.mut.Lock()
 	defer m.mut.Unlock()
 	pattern = m.replace(pattern)
@@ -214,7 +220,7 @@ func (m *Mux) Use(handler http.HandlerFunc) {
 
 func (m *Mux) middleware(w http.ResponseWriter, r *http.Request) {
 	for _, handler := range m.middlewares {
-		handler(w, r)
+		handler.ServeHTTP(w, r)
 	}
 }
 
