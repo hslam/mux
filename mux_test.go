@@ -50,7 +50,13 @@ func TestParseMatch(t *testing.T) {
 func testHTTP(method, url string, status int, result string, t *testing.T) {
 	var req *http.Request
 	req, _ = http.NewRequest(method, url, nil)
-	if resp, err := http.DefaultClient.Do(req); err != nil {
+	client := &http.Client{
+		Transport: &http.Transport{
+			MaxConnsPerHost:   1,
+			DisableKeepAlives: true,
+		},
+	}
+	if resp, err := client.Do(req); err != nil {
 		t.Error(err)
 	} else if resp.StatusCode != status {
 		t.Error(resp.StatusCode)
@@ -168,7 +174,7 @@ func TestHandleFunc(t *testing.T) {
 func TestServeHTTP(t *testing.T) {
 	m := New()
 	m.HandleFunc("//hello", func(w http.ResponseWriter, r *http.Request) {
-		panic("hello")
+		w.Write([]byte("hello\n"))
 	})
 	addr := ":8080"
 	httpServer := &http.Server{
@@ -177,8 +183,7 @@ func TestServeHTTP(t *testing.T) {
 	}
 	l, _ := net.Listen("tcp", addr)
 	go httpServer.Serve(l)
-	testHTTP("GET", "http://"+addr+"/hello", http.StatusBadRequest, "hello\n", t)
-	testHTTP("GET", "http://"+addr+"/hello", http.StatusBadRequest, "hello\n", t)
+	testHTTP("GET", "http://"+addr+"/hello", http.StatusOK, "hello\n", t)
 	httpServer.Close()
 }
 
