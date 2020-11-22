@@ -253,13 +253,14 @@ func (m *Mux) Params(r *http.Request) map[string]string {
 func (m *Mux) matchParams(path string) (string, string, bool) {
 	for _, p := range m.prefixes {
 		if strings.HasPrefix(path, p.prefix) {
+			r := path[len(p.prefix):]
 			for _, v := range p.m {
-				r := path[len(p.prefix):]
 				if r == "" {
 					return p.prefix, v.key, true
 				}
-				form := strings.Split(r, "/")
-				if len(form) == len(v.match) {
+				count := strings.Count(r, "/")
+				if count+1 == len(v.match) {
+					form := strings.Split(r, "/")
 					key := ""
 					for i := 0; i < len(form); i++ {
 						if v.match[i] != "" {
