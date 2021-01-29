@@ -14,6 +14,7 @@ Package mux implements an HTTP request multiplexer.
 * Path matching and routing
 * Fully compatible with the http.HandlerFunc
 * Not found
+* Recovery
 * [HTTP Handler](https://github.com/hslam/handler "handler")
 
 ## Get started
@@ -60,6 +61,7 @@ import (
 
 func main() {
 	m := mux.New()
+	m.Recovery(mux.Recovery)
 	m.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found : "+r.URL.String(), http.StatusNotFound)
 	})
@@ -135,7 +137,6 @@ group/bar id:2
 
 ### License
 This package is licensed under a MIT license (Copyright (c) 2019 Meng Huang)
-
 
 ### Author
 mux was written by Meng Huang.
